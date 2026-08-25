@@ -1,29 +1,29 @@
 {
+  "engines": { "node": ">=24" },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "next": "latest",
-    "openai": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "next": "16.3.2",
+    "openai": "7.5.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "autoprefixer": "latest",
-    "eslint": "latest",
-    "eslint-config-next": "latest",
+    "eslint": "10.9.0",
+    "eslint-config-next": "16.3.2",
     "jsdom": "latest",
-    "postcss": "latest",
-    "tailwindcss": "latest",
-    "typescript": "latest",
-    "vitest": "latest"
+    "postcss": "8.5.26",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
   }
 }
