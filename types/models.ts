@@ -1,7 +1,7 @@
 export type Journey = 'urgent' | 'standard' | 'status';
 export type IncidentType = 'financial_fraud' | 'suspicious_message' | 'account_access' | 'prior_report' | 'unknown';
 export type EvidenceType = 'transaction_screenshot' | 'sms' | 'phone' | 'upi' | 'url' | 'chat_screenshot' | 'email' | 'notes';
-export type StatusState = 'received' | 'reviewing' | 'action' | 'outcome';
+export type StatusState = 'received' | 'cyber_cell' | 'outcome';
 
 export interface Complaint {
   id: string;
