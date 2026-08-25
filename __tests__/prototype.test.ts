@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { extractIncidentDraft } from '../ai/extractIncidentDraft';
 import { extractSignals } from '../evidence/evidenceSignals';
 import { scamCheck } from '../scam-check/scamCheck';
+import { mockSignatures } from '../scam-check/mockSignatures';
 import { buildStatusTimeline, calculateTypicalRange } from '../status/statusMachine';
 import { classifyWithRules, overrideTriage } from '../triage/triageRules';
 import { buildTimeline, editTimelineEvent } from '../timeline/timelineBuilder';
@@ -53,7 +54,8 @@ describe('status state machine', () => {
 });
 
 describe('scam check', () => {
-  it('matches known mock signature', () => expect(scamCheck('refund-help@upi').result).toBe('MATCH'));
+  it('uses the required 20-30 synthetic signatures', () => expect(mockSignatures).toHaveLength(24));
+  it('matches known mock signature and exposes a specific reason', () => expect(scamCheck('refund-help@upi').message).toContain('associated with a refund impersonation scenario'));
   it('returns no-match with safety language', () => expect(scamCheck('unknown@upi').message).toContain('does not mean safe'));
   it('returns inconclusive for malformed inputs', () => expect(scamCheck('x').result).toBe('INCONCLUSIVE'));
 });
