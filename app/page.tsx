@@ -1,70 +1,214 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { aiDraft, aiScamReason, aiTriage } from '../ai/openaiClient';
 import { extractIncidentDraft } from '../ai/extractIncidentDraft';
 import { PrototypeBanner } from '../components/PrototypeBanner';
 import { LargeActionButton } from '../components/LargeActionButton';
 import { ReviewSection } from '../components/ReviewSection';
 import { syntheticHistoricalCases } from '../data/syntheticCases';
-import { createEvidence } from '../evidence/evidenceSignals';
 import { scamCheck } from '../scam-check/scamCheck';
-import { buildStatusTimeline } from '../status/statusMachine';
+import { buildStatusTimeline, calculateTypicalRange } from '../status/statusMachine';
 import { classifyWithRules, overrideTriage, type TriageResult } from '../triage/triageRules';
-import { buildTimeline, editTimelineEvent } from '../timeline/timelineBuilder';
-import type { EvidenceItem, EvidenceType, TimelineEvent } from '../types/models';
+import { checkIncidentCharacters } from '../validation/characterGuard';
+import type { Journey } from '../types/models';
 
-const evidenceTypes: EvidenceType[] = ['transaction_screenshot', 'sms', 'phone', 'upi', 'url', 'chat_screenshot', 'email', 'notes'];
+const demoStory = 'A caller pretended to be from my bank and I transferred ₹18,500.';
 
 export default function Home() {
-  const [story, setStory] = useState('A guy called saying he was from my bank and I transferred 18,500.');
-  const [triage, setTriage] = useState<TriageResult>(() => classifyWithRules(story));
-  const [stage, setStage] = useState<'start' | 'understand' | 'evidence' | 'review' | 'status'>('start');
+  const [stage, setStage] = useState<'triage' | 'urgent' | 'standard' | 'status' | 'submitted'>('triage');
+  const [story, setStory] = useState(demoStory);
+  const [triage, setTriage] = useState<TriageResult>(() => classifyWithRules(demoStory));
+  const [triageReason, setTriageReason] = useState('Rule-based preview. Free-text triage uses OpenAI when you continue.');
+  const [triageLoading, setTriageLoading] = useState(false);
   const [amount, setAmount] = useState('₹18,500');
-  const [time, setTime] = useState("We don't know this yet.");
-  const [platform, setPlatform] = useState("We don't know this yet.");
-  const [whatHappened, setWhatHappened] = useState(story);
-  const [evidenceText, setEvidenceText] = useState('SMS: INR 18,500 debited after call from +919999999999');
-  const [evidenceType, setEvidenceType] = useState<EvidenceType>('sms');
-  const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
-  const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
-  const [approved, setApproved] = useState(false);
+  const [approximateTime, setApproximateTime] = useState('We don\'t know this yet.');
+  const [platform, setPlatform] = useState('We don\'t know this yet.');
+  const [description, setDescription] = useState(demoStory);
+  const [draft, setDraft] = useState(() => extractIncidentDraft(demoStory));
+  const [draftSummary, setDraftSummary] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
   const [scamInput, setScamInput] = useState('refund-help@upi');
-  const draft = useMemo(() => extractIncidentDraft(whatHappened), [whatHappened]);
-  const statuses = useMemo(() => buildStatusTimeline(syntheticHistoricalCases), []);
+  const [scamExplanation, setScamExplanation] = useState('');
+  const [approved, setApproved] = useState(false);
+  const [ack, setAck] = useState('FR-DEMO-2026-0812');
+
+  const characterGuard = useMemo(() => checkIncidentCharacters(description), [description]);
   const scam = useMemo(() => scamCheck(scamInput), [scamInput]);
+  const statuses = useMemo(() => buildStatusTimeline(syntheticHistoricalCases, triage.incidentType, 6), [triage.incidentType]);
+  const range = useMemo(() => calculateTypicalRange(syntheticHistoricalCases, triage.incidentType), [triage.incidentType]);
 
-  function understand() { const result = classifyWithRules(story); setTriage(result); setWhatHappened(story); setStage('understand'); }
-  function addEvidence() { const item = createEvidence(evidenceType, evidenceText); const next = [...evidence, item]; setEvidence(next); setTimeline(buildTimeline(whatHappened, next)); }
+  function chooseJourney(journey: Journey) {
+    const result = overrideTriage(journey);
+    setTriage(result);
+    setStage(journey);
+    setDescription(story);
+    setAiError('');
+  }
 
-  return <main className="mx-auto min-h-screen max-w-md space-y-4 bg-slate-50 p-4">
-    <PrototypeBanner />
-    <header className="space-y-2"><p className="text-sm font-bold uppercase tracking-wide text-blue-700">First Response</p><h1 className="text-3xl font-black leading-tight text-slate-950">When cyber fraud happens, start with help — not forms.</h1><p className="text-slate-700">Triage → Protect → Preserve → Report → Track</p></header>
+  async function continueFromFreeText() {
+    if (!story.trim()) return;
+    setTriageLoading(true);
+    setAiError('');
+    try {
+      const result = await aiTriage(story);
+      setTriage(overrideTriage(result.journey));
+      setTriageReason(result.reason);
+      setStage(result.journey);
+      setDescription(story);
+    } catch {
+      const fallback = classifyWithRules(story);
+      setTriage(fallback);
+      setTriageReason(`AI unavailable, so the deterministic fallback chose: ${fallback.label}. You can override it below.`);
+      setStage(fallback.journey);
+      setDescription(story);
+      setAiError('OpenAI is unavailable. The prototype used its transparent deterministic fallback.');
+    } finally {
+      setTriageLoading(false);
+    }
+  }
 
-    {stage === 'start' && <section className="space-y-3">
-      <h2 className="text-xl font-black">What happened?</h2>
-      <LargeActionButton tone="danger" onClick={() => setTriage(overrideTriage('urgent'))}>🚨 Something is happening right now<br/><span className="text-base font-medium">Money is being taken from my account.</span></LargeActionButton>
-      <LargeActionButton onClick={() => setTriage(overrideTriage('standard'))}>⚠️ Something happened<br/><span className="text-base font-medium">I lost money, received a suspicious message, or was targeted.</span></LargeActionButton>
-      <LargeActionButton onClick={() => setTriage(overrideTriage('status'))}>📋 I already reported something<br/><span className="text-base font-medium">I want to understand my complaint.</span></LargeActionButton>
-      <label className="block font-bold">Tell us what happened<textarea className="mt-2 min-h-32 w-full rounded-2xl border p-3" value={story} onChange={(e) => setStory(e.target.value)} /></label>
-      <div className="rounded-2xl bg-white p-3"><p className="font-bold">We understood this as: {triage.label}</p><button className="mt-2 rounded-xl border px-4 py-3 font-bold" onClick={understand}>Continue / Change</button></div>
-    </section>}
+  async function generateDraft() {
+    setAiLoading(true);
+    setAiError('');
+    try {
+      const result = await aiDraft({ story: description, amount, approximateTime, platform });
+      setDraft(result);
+      setDraftSummary(result.summary);
+    } catch {
+      setDraft(extractIncidentDraft(description));
+      setDraftSummary('AI drafting is unavailable, so this preview uses deterministic extraction only.');
+      setAiError('Add OPENAI_API_KEY to enable the live OpenAI draft.');
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
-    {stage === 'understand' && <section className="space-y-3">
-      {triage.journey === 'urgent' && <div className="rounded-3xl border-4 border-red-700 bg-red-50 p-4"><p className="text-sm font-black text-red-800">ACT NOW</p><h2 className="text-2xl font-black">Call 1930</h2><p>This is a mock interaction. This prototype does not place calls and cannot freeze accounts.</p><button className="mt-3 min-h-14 w-full rounded-2xl bg-red-700 px-4 text-lg font-black text-white">Simulate call prompt</button></div>}
-      <ReviewSection title="What we understood"><ul className="list-inside list-disc"><li>{draft.suspected}</li><li>financial loss: {draft.financialLoss}</li><li>amount: {draft.amount}</li><li>incident type: {draft.approximateIncidentType}</li><li>possible evidence: {draft.possibleEvidence.join(', ')}</li></ul><p className="font-bold">AI must not invent facts. Missing details stay as “We don't know this yet.”</p></ReviewSection>
-      <ReviewSection title={triage.journey === 'urgent' ? 'Minimal questions while you contact the right channel' : 'Tell the story first, then structure it'}>
-        <input aria-label="amount" className="w-full rounded-xl border p-3" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <input aria-label="approximate time" className="w-full rounded-xl border p-3" value={time} onChange={(e) => setTime(e.target.value)} />
-        <input aria-label="bank or payment platform" className="w-full rounded-xl border p-3" value={platform} onChange={(e) => setPlatform(e.target.value)} />
-        <textarea aria-label="what happened" className="min-h-24 w-full rounded-xl border p-3" value={whatHappened} onChange={(e) => setWhatHappened(e.target.value)} />
-      </ReviewSection>
-      <div className="grid grid-cols-2 gap-3"><button className="rounded-2xl border p-4 font-black" onClick={() => setStage('start')}>Edit</button><button className="rounded-2xl bg-blue-700 p-4 font-black text-white" onClick={() => setStage('evidence')}>Yes, continue</button></div>
-    </section>}
+  async function explainScam() {
+    try {
+      const signal = scam.signature ? `${scam.signature.kind}: ${scam.signature.label}` : 'No deterministic signature matched.';
+      const result = await aiScamReason({ query: scamInput, result: scam.result, signal });
+      setScamExplanation(result.explanation);
+    } catch {
+      setScamExplanation('AI reasoning is unavailable. The deterministic verdict above remains authoritative.');
+    }
+  }
 
-    {stage === 'evidence' && <section className="space-y-3"><h2 className="text-xl font-black">Evidence locker</h2><p className="text-slate-700">Use mock/demo evidence only. Original text is preserved; nothing is silently deleted.</p><select className="w-full rounded-xl border p-3" value={evidenceType} onChange={(e) => setEvidenceType(e.target.value as EvidenceType)}>{evidenceTypes.map((type) => <option key={type}>{type}</option>)}</select><textarea className="min-h-28 w-full rounded-xl border p-3" value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} /><button className="min-h-14 w-full rounded-2xl bg-blue-700 font-black text-white" onClick={addEvidence}>Add mock evidence</button>{evidence.map((item) => <ReviewSection key={item.id} title={item.label}><p>{item.content}</p><p className="text-sm">Signals: {Object.entries(item.signals).map(([k,v]) => `${k}: ${v}`).join(', ') || "We don't know this yet."}</p></ReviewSection>)}<ReviewSection title="Incident timeline">{timeline.map((event) => <div key={event.id} className="grid grid-cols-3 gap-2"><input className="rounded-lg border p-2" value={event.time} onChange={(e) => setTimeline(editTimelineEvent(timeline, event.id, { time: e.target.value }))}/><input className="col-span-2 rounded-lg border p-2" value={event.description} onChange={(e) => setTimeline(editTimelineEvent(timeline, event.id, { description: e.target.value }))}/></div>)}</ReviewSection><button className="min-h-14 w-full rounded-2xl bg-blue-700 font-black text-white" onClick={() => setStage('review')}>Review evidence pack</button></section>}
+  function submitMockReport() {
+    setAck(`FR-DEMO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+    setStage('submitted');
+  }
 
-    {stage === 'review' && <section className="space-y-3"><h2 className="text-xl font-black">Review before reporting</h2><ReviewSection title="Incident"><p>{whatHappened}</p></ReviewSection><ReviewSection title="Financial information"><p>Amount: {amount}</p><p>Approximate time: {time}</p><p>Bank/payment platform: {platform}</p></ReviewSection><ReviewSection title="Identifiers"><p>{evidence.flatMap((e) => Object.entries(e.signals)).filter(([k]) => ['phone','upi','url'].includes(k)).map(([k,v]) => `${k}: ${v}`).join(', ') || "We don't know this yet."}</p></ReviewSection><ReviewSection title="Communications">{evidence.map((e) => <p key={e.id}>{e.label}: {e.content}</p>)}</ReviewSection><ReviewSection title="Timeline">{timeline.map((e) => <p key={e.id}>{e.time} — {e.description}</p>)}</ReviewSection><label className="flex gap-3 rounded-2xl bg-white p-4 font-bold"><input type="checkbox" checked={approved} onChange={(e) => setApproved(e.target.checked)} /> I reviewed and approve this mock report.</label><button disabled={!approved} className="min-h-14 w-full rounded-2xl bg-green-700 font-black text-white disabled:bg-slate-400" onClick={() => setStage('status')}>Create mock report</button></section>}
+  return (
+    <main className="mx-auto min-h-screen max-w-md space-y-4 bg-slate-50 p-4 pb-10">
+      <PrototypeBanner />
 
-    {stage === 'status' && <section className="space-y-3"><h2 className="text-xl font-black">Simulated status tracker</h2><p className="text-sm font-bold">This prototype has no access to real complaint status.</p>{statuses.map((s) => <ReviewSection key={s.state} title={`${s.title} — simulated day ${s.simulatedDay}`}><p><strong>What this means:</strong> {s.meaning}</p><p><strong>What happens next:</strong> {s.next}</p><p><strong>Do I need to do anything?</strong> {s.citizenAction}</p></ReviewSection>)}<ReviewSection title="Secondary mock scam check"><input className="w-full rounded-xl border p-3" value={scamInput} onChange={(e) => setScamInput(e.target.value)} /><p className="font-black">{scam.result}</p><p>{scam.message}</p></ReviewSection></section>}
-  </main>;
+      <header className="space-y-2">
+        <p className="text-sm font-black uppercase tracking-widest text-blue-700">First Response</p>
+        <h1 className="text-3xl font-black leading-tight text-slate-950">Start with what happened — not a legal category.</h1>
+        <p className="text-slate-700">Triage → act → report → track</p>
+      </header>
+
+      {stage === 'triage' && (
+        <section className="space-y-3" aria-labelledby="triage-heading">
+          <h2 id="triage-heading" className="text-xl font-black">What do you need right now?</h2>
+          <LargeActionButton tone="danger" onClick={() => chooseJourney('urgent')}>
+            Money is being taken from my account right now.
+          </LargeActionButton>
+          <LargeActionButton tone="calm" onClick={() => chooseJourney('standard')}>
+            Something happened and I want to report it.
+          </LargeActionButton>
+          <LargeActionButton onClick={() => chooseJourney('status')}>
+            I want to check a complaint I already filed.
+          </LargeActionButton>
+
+          <ReviewSection title="Or tell us in your own words">
+            <textarea aria-label="Describe what happened" className="min-h-32 w-full rounded-2xl border p-3" value={story} onChange={(e) => setStory(e.target.value)} />
+            <p className="text-sm font-semibold">We will show the route we choose. You can always override it.</p>
+            <button disabled={triageLoading} onClick={continueFromFreeText} className="min-h-14 w-full rounded-2xl bg-slate-950 px-4 font-black text-white disabled:opacity-50">
+              {triageLoading ? 'Understanding…' : 'Continue with AI triage'}
+            </button>
+            <div className="rounded-xl bg-slate-100 p-3 text-sm">
+              <p className="font-black">Chosen route: {triage.journey}</p>
+              <p>{triageReason}</p>
+            </div>
+            {aiError && <p role="status" className="text-sm font-bold text-amber-800">{aiError}</p>}
+          </ReviewSection>
+        </section>
+      )}
+
+      {stage === 'urgent' && (
+        <section className="space-y-4" aria-labelledby="urgent-heading">
+          <div className="rounded-3xl border-4 border-red-700 bg-red-50 p-5">
+            <p className="text-sm font-black uppercase tracking-widest text-red-800">Act first</p>
+            <h2 id="urgent-heading" className="mt-1 text-3xl font-black text-red-950">Call 1930 now</h2>
+            <p className="mt-2 text-red-950">If money is moving right now, getting help quickly matters more than finishing a form.</p>
+            <button className="mt-4 min-h-16 w-full rounded-2xl bg-red-700 px-4 text-xl font-black text-white">Simulate call prompt</button>
+            <p className="mt-2 text-xs font-semibold text-red-900">Mock only — this button does not place a call or freeze an account.</p>
+          </div>
+
+          <ReviewSection title="Auto-drafted complaint — editable">
+            <p className="text-sm">Nothing here should be treated as confirmed until you review it.</p>
+            <textarea aria-label="Incident description" className="min-h-28 w-full rounded-xl border p-3" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <div className="grid grid-cols-1 gap-2">
+              <input aria-label="Amount" className="rounded-xl border p-3" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <input aria-label="Approximate time" className="rounded-xl border p-3" value={approximateTime} onChange={(e) => setApproximateTime(e.target.value)} />
+              <input aria-label="Bank or payment platform" className="rounded-xl border p-3" value={platform} onChange={(e) => setPlatform(e.target.value)} />
+            </div>
+            <button onClick={generateDraft} disabled={aiLoading} className="min-h-14 w-full rounded-2xl bg-blue-700 font-black text-white disabled:opacity-50">{aiLoading ? 'Drafting with OpenAI…' : 'Draft with OpenAI'}</button>
+            {draftSummary && <p className="rounded-xl bg-blue-50 p-3 font-semibold">{draftSummary}</p>}
+            <ul className="list-inside list-disc text-sm"><li>Amount: {draft.amount}</li><li>Possible incident: {draft.approximateIncidentType}</li><li>Possible evidence: {draft.possibleEvidence.join(', ')}</li><li>Missing: {draft.missing.join(', ')}</li></ul>
+          </ReviewSection>
+          <button onClick={submitMockReport} className="min-h-14 w-full rounded-2xl bg-slate-950 font-black text-white">Create mock report</button>
+          <button onClick={() => setStage('triage')} className="w-full p-3 font-bold">Change route</button>
+        </section>
+      )}
+
+      {stage === 'standard' && (
+        <section className="space-y-4" aria-labelledby="standard-heading">
+          <div><p className="text-sm font-black uppercase tracking-widest text-blue-700">Calm reporting</p><h2 id="standard-heading" className="text-2xl font-black">Tell the story first. We will structure it.</h2></div>
+          <ReviewSection title="Incident details">
+            <textarea aria-label="Incident description" className="min-h-36 w-full rounded-xl border p-3" value={description} onChange={(e) => setDescription(e.target.value)} />
+            {characterGuard.blocked && <div role="alert" className="rounded-xl border border-amber-400 bg-amber-50 p-3 text-sm font-semibold text-amber-950"><strong>Character warning:</strong> {characterGuard.message}</div>}
+            <p className="text-xs text-slate-600">We preserve your original text in this prototype; this warning is informational and never silently edits evidence.</p>
+            <input aria-label="Amount" className="w-full rounded-xl border p-3" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Approximate amount" />
+            <input aria-label="Approximate time" className="w-full rounded-xl border p-3" value={approximateTime} onChange={(e) => setApproximateTime(e.target.value)} placeholder="Approximate time" />
+            <input aria-label="Bank or payment platform" className="w-full rounded-xl border p-3" value={platform} onChange={(e) => setPlatform(e.target.value)} placeholder="Bank or payment platform" />
+          </ReviewSection>
+
+          <ReviewSection title="Optional scam check">
+            <p className="text-sm">Check one URL, UPI ID or phone number against our small synthetic signature set. “Not found” never means safe.</p>
+            <input aria-label="URL, UPI ID or phone" className="w-full rounded-xl border p-3" value={scamInput} onChange={(e) => { setScamInput(e.target.value); setScamExplanation(''); }} />
+            <div className="rounded-xl bg-slate-100 p-3"><p className="font-black">{scam.result}</p><p className="text-sm">{scam.message}</p></div>
+            <button onClick={explainScam} className="min-h-12 w-full rounded-xl border-2 border-slate-900 font-black">Explain this result with OpenAI</button>
+            {scamExplanation && <p className="rounded-xl bg-blue-50 p-3 text-sm font-semibold">{scamExplanation}</p>}
+          </ReviewSection>
+
+          <label className="flex gap-3 rounded-2xl bg-white p-4 font-bold shadow-sm"><input type="checkbox" checked={approved} onChange={(e) => setApproved(e.target.checked)} /> I reviewed this mock report and approve it.</label>
+          <button disabled={!approved} onClick={submitMockReport} className="min-h-14 w-full rounded-2xl bg-green-700 font-black text-white disabled:bg-slate-400">Submit mock report</button>
+          <button onClick={() => setStage('triage')} className="w-full p-3 font-bold">Change route</button>
+        </section>
+      )}
+
+      {stage === 'status' && (
+        <section className="space-y-4" aria-labelledby="status-heading">
+          <div><p className="text-sm font-black uppercase tracking-widest text-blue-700">Status check</p><h2 id="status-heading" className="text-2xl font-black">Understand what your status means.</h2></div>
+          <ReviewSection title="Mock acknowledgment number"><p className="font-mono text-lg font-black">FR-DEMO-2026-0812</p><p className="text-sm">This is a synthetic reference, not a real complaint number.</p></ReviewSection>
+          <p className="rounded-2xl bg-blue-50 p-4 font-bold">Typical cases like this take {range.min}–{range.max} days. You are viewing simulated day 6.</p>
+          {statuses.map((status) => <ReviewSection key={status.state} title={`${status.title} · day ${status.simulatedDay}`}><p><strong>What it means:</strong> {status.meaning}</p><p><strong>What happens next:</strong> {status.next}</p><p><strong>Your action:</strong> {status.citizenAction}</p></ReviewSection>)}
+          <button onClick={() => setStage('triage')} className="w-full p-3 font-bold">Back to triage</button>
+        </section>
+      )}
+
+      {stage === 'submitted' && (
+        <section className="space-y-4" aria-labelledby="submitted-heading">
+          <div className="rounded-3xl bg-green-50 p-5"><p className="text-sm font-black uppercase tracking-widest text-green-800">Mock report created</p><h2 id="submitted-heading" className="mt-1 text-3xl font-black">You have a reference.</h2><p className="mt-2">Your prototype report is saved only in this simulated journey.</p></div>
+          <ReviewSection title="Acknowledgment number"><p className="font-mono text-xl font-black">{ack}</p><p className="text-sm">Synthetic demo reference — not a real government complaint number.</p></ReviewSection>
+          <button onClick={() => setStage('status')} className="min-h-14 w-full rounded-2xl bg-blue-700 font-black text-white">View simulated status</button>
+          <button onClick={() => setStage('triage')} className="w-full p-3 font-bold">Start another demo journey</button>
+        </section>
+      )}
+    </main>
+  );
 }
