@@ -39,7 +39,7 @@ export interface StatusEvent {
 }
 
 export interface HistoricalCase { id: string; incidentType: IncidentType; daysToReview: number; daysToAction: number; daysToOutcome: number; }
-export interface ScamSignature { kind: 'url' | 'upi' | 'phone'; value: string; label: string; }
+export interface ScamSignature { kind: 'url' | 'upi' | 'phone'; value: string; label: string; risk_reason: string; }
 export interface IncidentDraft {
   suspected: string;
   financialLoss: 'yes' | 'no' | 'unknown';
