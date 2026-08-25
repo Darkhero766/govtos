@@ -5,7 +5,6 @@ import type { Journey } from '../../../types/models';
 export const runtime = 'nodejs';
 
 const model = process.env.OPENAI_MODEL || 'gpt-5.6-luna';
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 function parseJson<T>(text: string): T {
   const cleaned = text.trim().replace(/^```json\s*/i, '').replace(/```$/i, '').trim();
@@ -17,9 +16,9 @@ function safeText(value: unknown): string {
 }
 
 export async function POST(request: Request) {
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json({ error: 'OPENAI_API_KEY is not configured.' }, { status: 503 });
-  }
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return NextResponse.json({ error: 'OPENAI_API_KEY is not configured.' }, { status: 503 });
+  const client = new OpenAI({ apiKey });
 
   try {
     const body = await request.json();
@@ -30,10 +29,7 @@ export async function POST(request: Request) {
       const response = await client.responses.create({
         model,
         store: false,
-        input: [
-          { role: 'system', content: 'Classify a cybercrime citizen message into exactly one journey. urgent = money is being taken or a financial transfer is happening now; status = an existing complaint/status request; standard = everything else. Never invent facts. Return JSON only: {"journey":"urgent|standard|status","reason":"short plain-language reason"}.' },
-          { role: 'user', content: story },
-        ],
+        input: `Classify this cybercrime citizen message into exactly one journey. urgent = money is being taken or a financial transfer is happening now; status = an existing complaint/status request; standard = everything else. Never invent facts. Return JSON only with keys journey and reason. Message: ${story}`,
       });
       const result = parseJson<{ journey: Journey; reason: string }>(response.output_text);
       if (!['urgent', 'standard', 'status'].includes(result.journey)) throw new Error('Invalid AI journey');
@@ -41,32 +37,26 @@ export async function POST(request: Request) {
     }
 
     if (operation === 'draft') {
-      const story = safeText(body.story);
-      const amount = safeText(body.amount);
-      const approximateTime = safeText(body.approximateTime);
-      const platform = safeText(body.platform);
+      const payload = {
+        story: safeText(body.story),
+        amount: safeText(body.amount),
+        approximateTime: safeText(body.approximateTime),
+        platform: safeText(body.platform),
+      };
       const response = await client.responses.create({
         model,
         store: false,
-        input: [
-          { role: 'system', content: 'Draft a cybercrime complaint summary from only stated facts. Missing facts must be represented as "We don\'t know this yet." Never invent a transaction ID, suspect identity, bank, time, amount, or evidence. Return JSON only with keys: summary, suspected, financialLoss (yes|no|unknown), amount, approximateIncidentType, possibleEvidence (array), missing (array).' },
-          { role: 'user', content: JSON.stringify({ story, amount, approximateTime, platform }) },
-        ],
+        input: `Draft a cybercrime complaint summary from only stated facts. Missing facts must be "We don't know this yet." Never invent a transaction ID, suspect identity, bank, time, amount, or evidence. Return JSON only with keys summary, suspected, financialLoss, amount, approximateIncidentType, possibleEvidence, missing. Data: ${JSON.stringify(payload)}`,
       });
       return NextResponse.json(parseJson(response.output_text));
     }
 
     if (operation === 'scamReason') {
-      const query = safeText(body.query);
-      const result = safeText(body.result);
-      const signal = safeText(body.signal);
+      const payload = { query: safeText(body.query), result: safeText(body.result), signal: safeText(body.signal) };
       const response = await client.responses.create({
         model,
         store: false,
-        input: [
-          { role: 'system', content: 'Explain a deterministic scam-signature result in plain language. The deterministic matcher is authoritative: do not change MATCH, NOT FOUND, or INCONCLUSIVE. If MATCH, explain only the supplied signal. If NOT FOUND, explicitly say it was not found in the demonstration data and does not mean safe. If INCONCLUSIVE, explain that more valid input is needed. Return JSON only: {"explanation":"..."}.' },
-          { role: 'user', content: JSON.stringify({ query, result, signal }) },
-        ],
+        input: `Explain a deterministic scam-signature result in plain language. The deterministic matcher is authoritative: do not change MATCH, NOT FOUND, or INCONCLUSIVE. If MATCH, explain only the supplied signal. If NOT FOUND, explicitly say it was not found in the demonstration data and does not mean safe. If INCONCLUSIVE, explain that more valid input is needed. Return JSON only: {"explanation":"..."}. Data: ${JSON.stringify(payload)}`,
       });
       return NextResponse.json(parseJson<{ explanation: string }>(response.output_text));
     }
