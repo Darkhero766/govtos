@@ -29,7 +29,7 @@ First Response reorders the citizen journey around one idea: **describe what is 
 - `scam-check/scamCheck.ts` — signature matching and verdict.
 - `status/statusMachine.ts` — state machine and synthetic timeline calculation.
 
-The API key stays server-side. Set `OPENAI_API_KEY` in your local environment or Vercel project; never put it in client code. OpenAI's current JavaScript SDK uses the Responses API for server-side calls. citeturn1search1turn2search1
+The API key stays server-side. Set `OPENAI_API_KEY` in your local environment or Vercel project; never put it in client code. The implementation uses the official OpenAI JavaScript SDK and Responses API.
 
 ## Safety / privacy
 
