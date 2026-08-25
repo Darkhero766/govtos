@@ -5,45 +5,35 @@
 - Files changed: None.
 - Tests run: None.
 - Result: Repository was empty except `.gitkeep`; plan approved by user.
-- Issues discovered: No existing app or instructions.
-- Fixes made: None.
 
 ## Task: Project scaffold
 - Objective: Create Next.js, TypeScript, Tailwind, Vitest scaffold for the prototype.
 - Files changed: `package.json`, `tsconfig.json`, `next.config.ts`, `postcss.config.js`, `tailwind.config.ts`, `vitest.config.ts`, `next-env.d.ts`.
 - Tests run: Pending dependency install.
 - Result: Scaffold files created.
-- Issues discovered: None yet.
-- Fixes made: None.
 
 ## Task: Core prototype implementation
 - Objective: Implement mobile-first triage, urgent response, AI-safe understanding, evidence locker, timeline, review, status, and secondary scam check.
-- Files changed: `types/models.ts`, `triage/triageRules.ts`, `ai/extractIncidentDraft.ts`, `evidence/evidenceSignals.ts`, `timeline/timelineBuilder.ts`, `status/statusMachine.ts`, `scam-check/*`, `data/syntheticCases.ts`, `components/*`, `app/*`.
-- Tests run: Pending.
-- Result: Connected journey implemented with synthetic data and explicit prototype trust messaging.
-- Issues discovered: None yet.
-- Fixes made: None.
+- Result: Connected prototype implemented with synthetic data and explicit prototype trust messaging.
 
-## Task: Tests and dependency installation
-- Objective: Add deterministic tests for triage, fallback extraction, hallucination prevention, timeline editing, status state, scam matching, no-match, inconclusive, and malformed inputs.
-- Files changed: `__tests__/prototype.test.ts`, `package.json`.
-- Tests run: `npm install`.
-- Result: Tests added; dependency installation blocked by registry 403 in the environment.
-- Issues discovered: npm registry returned 403 for scoped packages, preventing local install and execution of checks.
-- Fixes made: Removed unused `@testing-library/react` dependency to reduce install surface; registry still blocked `@types/node`.
+## Task: Verification found missing requirements
+- Objective: Audit the implementation against the First Response specification.
+- Findings: The earlier `ai/extractIncidentDraft.ts` was deterministic rather than a genuine OpenAI integration; the live character-trap guard was missing; scam checking was placed on the status screen rather than embedded in the standard path; the status tracker had four internal states instead of the required three citizen-facing states; the historical dataset contained only three rows; and the triage cards changed selection without reliably changing the component journey.
 
-## Task: Documentation and checks
-- Objective: Document the prototype and run available checks.
-- Files changed: `README.md`, `CODEX_TASK_LOG.md`.
-- Tests run: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint`.
-- Result: Checks could not complete because dependencies were not installed.
-- Issues discovered: `npm install` is blocked by registry 403; therefore `vitest`, `next`, and local type packages are unavailable. `npm run lint` also needs project dependencies.
-- Fixes made: Documented setup and environment limitation.
+## Task: First Response compliance pass
+- Objective: Fix the gaps found during audit and make the prototype genuinely demonstrate OpenAI usage.
+- Changes:
+  - Added `app/api/ai/route.ts` using the official OpenAI JavaScript SDK and Responses API for free-text triage, incident drafting, and scam-result reasoning.
+  - Added `ai/openaiClient.ts` for client-side calls to the server route.
+  - Kept the API key server-side and added `.env.example`.
+  - Added `validation/characterGuard.ts` with deterministic detection for every specified blocked character and multiple-character cases.
+  - Rebuilt `app/page.tsx` so urgent, standard, and status are real journey branches; the urgent path exposes the 1930 action first; standard includes the live character guard and embedded scam check; status has three plain-language states.
+  - Expanded historical data to 180 deterministic synthetic rows.
+  - Updated `status/statusMachine.ts` to calculate an incident-type-specific synthetic timeline range.
+  - Expanded unit tests for all blocked characters, multiple occurrences, three-state status, 180-row data, triage overrides, and scam outcomes.
+  - Updated README with the AI/deterministic split and demo script.
 
-## Task: Commit and pull request attempt
-- Objective: Commit completed prototype changes and create a pull request.
-- Files changed: `CODEX_TASK_LOG.md`.
-- Tests run: `git commit -m "Build First Response prototype"`, `gh pr create ...`.
-- Result: Commit succeeded; PR creation failed because GitHub CLI is not authenticated and no `make_pr` tool is available in this environment.
-- Issues discovered: `gh pr create` requires `gh auth login` or `GH_TOKEN`.
-- Fixes made: Recorded limitation in task log.
+## Verification status
+- Repository-level static inspection completed after the changes.
+- Local `npm install`, `npm test`, `npm run typecheck`, and `npm run build` were not executable in this environment because external package installation/network access is unavailable.
+- Therefore no claim is made that the current commit has passed a local build; the user should run the documented checks before submission.
