@@ -1,6 +1,14 @@
-import type { HistoricalCase } from '../types/models';
-export const syntheticHistoricalCases: HistoricalCase[] = [
-  { id: 'demo-1', incidentType: 'financial_fraud', daysToReview: 1, daysToAction: 3, daysToOutcome: 12 },
-  { id: 'demo-2', incidentType: 'suspicious_message', daysToReview: 2, daysToAction: 5, daysToOutcome: 15 },
-  { id: 'demo-3', incidentType: 'account_access', daysToReview: 1, daysToAction: 4, daysToOutcome: 10 },
-];
+import type { HistoricalCase, IncidentType } from '../types/models';
+
+const types: IncidentType[] = ['financial_fraud', 'suspicious_message', 'account_access'];
+
+// 180 deterministic synthetic rows. No real case data is used.
+export const syntheticHistoricalCases: HistoricalCase[] = Array.from({ length: 180 }, (_, index) => {
+  const incidentType = types[index % types.length];
+  const variation = (index * 7) % 5;
+  const base = incidentType === 'financial_fraud' ? 1 : incidentType === 'suspicious_message' ? 2 : 2;
+  const daysToReview = base + (variation % 2);
+  const daysToAction = daysToReview + 2 + ((index * 3) % 4);
+  const daysToOutcome = daysToAction + 6 + ((index * 5) % 7);
+  return { id: `synthetic-${index + 1}`, incidentType, daysToReview, daysToAction, daysToOutcome };
+});
