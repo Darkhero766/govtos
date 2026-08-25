@@ -33,7 +33,12 @@
   - Expanded unit tests for all blocked characters, multiple occurrences, three-state status, 180-row data, triage overrides, and scam outcomes.
   - Updated README with the AI/deterministic split and demo script.
 
+## Task: Scam dataset compliance
+- Objective: Match the requested synthetic scam-signature dataset requirements.
+- Changes: Expanded `scam-check/mockSignatures.ts` to 24 synthetic URL/UPI/phone signatures and added an explicit `risk_reason` to each. Deterministic matching remains authoritative; OpenAI only explains the supplied result.
+
 ## Verification status
 - Repository-level static inspection completed after the changes.
+- GitHub Actions workflow added for `npm install`, `npm test`, `npm run typecheck`, and `npm run build`, but no workflow run is currently exposed by the repository API.
 - Local `npm install`, `npm test`, `npm run typecheck`, and `npm run build` were not executable in this environment because external package installation/network access is unavailable.
 - Therefore no claim is made that the current commit has passed a local build; the user should run the documented checks before submission.
