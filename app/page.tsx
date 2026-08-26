@@ -11,11 +11,11 @@ import { checkIncidentCharacters } from '../validation/characterGuard';
 import { syntheticHistoricalCases } from '../data/syntheticCases';
 import type { Journey } from '../types/models';
 import './winner.css';
+import './3d-ai.css';
 
 type Stage = 'home' | 'urgent' | 'standard' | 'safety' | 'intelligence' | 'status' | 'submitted';
 type Evidence = { id: string; label: string; type: string };
 type Complaint = { id: string; journey?: string; category: string; story: string; status: string; amount?: string; platform?: string };
-
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 const demoStory = 'A caller pretended to be from my bank and I transferred ₹18,500.';
 
@@ -23,29 +23,25 @@ function Header({ onHome, onSafety, onIntelligence, onStatus }: { onHome: () => 
   return <header className="topbar"><button className="brand" onClick={onHome} aria-label="First Response home"><span className="brand-mark">FR</span><span><b>First Response</b><small>Cyber help, made understandable</small></span></button><nav aria-label="Primary"><button onClick={onSafety}>Online safety</button><button onClick={onIntelligence}>Check a signal</button><button onClick={onStatus}>Track</button><span className="lang-pill">हिंदी</span></nav></header>;
 }
 
+function localChatReply(value: string): string {
+  const t = value.toLowerCase();
+  if (/^(hi|hey|hello|hii|namaste|yo|good morning|good evening)\b/.test(t)) return 'Hey! 👋 I’m here with you. Tell me what happened online, in your own words. You don’t need to know the right category.';
+  if (/money|paid|payment|upi|bank|transfer|otp|scam|fraud/.test(t)) return 'I can help. If money was sent or an OTP was shared, tell me what happened (without sharing the OTP itself). If money is moving right now, call 1930 and your bank first.';
+  if (/threat|blackmail|bully|bullying|harass|stalk|photo|image|instagram|whatsapp/.test(t)) return 'I’m sorry you’re dealing with that. First, don’t delete the messages. Save screenshots and the profile/message link, and tell a trusted adult if you can. What happened most recently?';
+  if (/password|pin|cvv|aadhaar|pan/.test(t)) return 'Please don’t send that information here. I can still help without seeing it. Tell me what someone asked you to do and which app or website it happened on.';
+  return 'That’s okay — you don’t have to explain it perfectly. What happened, and what are you most worried about right now?';
+}
+
 function AIHelper({ onRoute }: { onRoute: (j: Journey, reason: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const [text, setText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'assistant', content: 'Hi. I’m here to help. You can tell me what happened, even if you are not sure what to call it. We can take it one small step at a time.' }]);
-
+  const [open, setOpen] = useState(false); const [text, setText] = useState(''); const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'assistant', content: 'Hi! 👋 I’m here to help. Tell me what happened, even if you’re not sure what to call it. We’ll take it one small step at a time.' }]);
   async function send() {
-    const value = text.trim();
-    if (!value || loading) return;
-    const next = [...messages, { role: 'user' as const, content: value }];
-    setMessages(next);
-    setText('');
-    setLoading(true);
-    try {
-      const r = await aiChat(next);
-      setMessages([...next, { role: 'assistant', content: r.reply }]);
-      if (r.journey === 'urgent') onRoute(r.journey, r.reply);
-    } catch {
-      const r = classifyWithRules(value);
-      setMessages([...next, { role: 'assistant', content: `I understand. A good starting point is ${r.label}. You can tell me a little more, and I’ll help with the next step.` }]);
-    } finally { setLoading(false); }
+    const value = text.trim(); if (!value || loading) return;
+    const next = [...messages, { role: 'user' as const, content: value }]; setMessages(next); setText(''); setLoading(true);
+    try { const r = await aiChat(next); setMessages([...next, { role: 'assistant', content: r.reply }]); if (r.journey === 'urgent') onRoute(r.journey, r.reply); }
+    catch { setMessages([...next, { role: 'assistant', content: localChatReply(value) }]); }
+    finally { setLoading(false); }
   }
-
   return <div className="ai-helper"><button className="ai-fab" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Open First Response AI assistant"><span className="ai-fab-face">✦</span><span>Need help?</span></button>{open && <div className="ai-pop" role="dialog" aria-label="First Response AI assistant"><div className="ai-pop-head"><span className="ai-spark">✦</span><div><b>Talk to First Response</b><small>For children, families and anyone who feels stuck.</small></div><button className="ai-close" onClick={() => setOpen(false)} aria-label="Close assistant">×</button></div><div className="ai-messages">{messages.map((m, i) => <div key={`${m.role}-${i}`} className={`ai-message ${m.role}`}>{m.content}</div>)}{loading && <div className="ai-message assistant typing"><i/><i/><i/></div>}</div><div className="ai-composer"><textarea value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} placeholder="Tell me what happened…" aria-label="Message First Response"/><button onClick={send} disabled={loading || !text.trim()} aria-label="Send message">→</button></div><small className="ai-safety-note">Never share passwords, OTPs, PINs or private intimate images here.</small></div>}</div>;
 }
 
@@ -54,45 +50,20 @@ function PathCard({ tone, icon, label, title, text, onClick }: { tone: string; i
 }
 
 export default function Home() {
-  const [stage, setStage] = useState<Stage>('home');
-  const [story, setStory] = useState(''); const [showAIInput, setShowAIInput] = useState(false); const [, setTriageReason] = useState(''); const [triageLoading, setTriageLoading] = useState(false);
-  const [triage, setTriage] = useState<TriageResult>(() => classifyWithRules(demoStory));
-  const [description, setDescription] = useState(demoStory); const [amount, setAmount] = useState('₹18,500'); const [platform, setPlatform] = useState(''); const [approximateTime, setApproximateTime] = useState('');
-  const [draft, setDraft] = useState(() => extractIncidentDraft(demoStory)); const [draftSummary, setDraftSummary] = useState(''); const [aiLoading, setAiLoading] = useState(false);
-  const [scamInput, setScamInput] = useState(''); const [scamExplanation, setScamExplanation] = useState(''); const [approved, setApproved] = useState(false);
-  const [safetyIssue, setSafetyIssue] = useState(''); const [intelligenceQuery, setIntelligenceQuery] = useState(''); const [selectedSignal, setSelectedSignal] = useState<CaseSignal | null>(null); const [complaints, setComplaints] = useState<Complaint[]>([]); const [dbConnected, setDbConnected] = useState(false); const [dbLoading, setDbLoading] = useState(false); const [ack, setAck] = useState('');
-  const [evidence, setEvidence] = useState<Evidence[]>([]);
-
-  const characterGuard = useMemo(() => checkIncidentCharacters(description), [description]);
-  const scam = useMemo(() => scamCheck(scamInput), [scamInput]);
-  const statuses = useMemo(() => buildStatusTimeline(syntheticHistoricalCases, triage.incidentType, 6), [triage.incidentType]);
-  const range = useMemo(() => calculateTypicalRange(syntheticHistoricalCases, triage.incidentType), [triage.incidentType]);
-  const signals = useMemo(() => { const q = intelligenceQuery.trim().toLowerCase(); return q ? publicCaseSignals.filter(s => `${s.identifier} ${s.category} ${s.patterns.join(' ')}`.toLowerCase().includes(q)) : publicCaseSignals; }, [intelligenceQuery]);
-
+  const [stage, setStage] = useState<Stage>('home'); const [story, setStory] = useState(''); const [showAIInput, setShowAIInput] = useState(false); const [, setTriageReason] = useState(''); const [triageLoading, setTriageLoading] = useState(false);
+  const [triage, setTriage] = useState<TriageResult>(() => classifyWithRules(demoStory)); const [description, setDescription] = useState(demoStory); const [amount, setAmount] = useState('₹18,500'); const [platform, setPlatform] = useState(''); const [approximateTime, setApproximateTime] = useState('');
+  const [draft, setDraft] = useState(() => extractIncidentDraft(demoStory)); const [draftSummary, setDraftSummary] = useState(''); const [aiLoading, setAiLoading] = useState(false); const [scamInput, setScamInput] = useState(''); const [scamExplanation, setScamExplanation] = useState(''); const [approved, setApproved] = useState(false);
+  const [safetyIssue, setSafetyIssue] = useState(''); const [intelligenceQuery, setIntelligenceQuery] = useState(''); const [selectedSignal, setSelectedSignal] = useState<CaseSignal | null>(null); const [complaints, setComplaints] = useState<Complaint[]>([]); const [dbConnected, setDbConnected] = useState(false); const [dbLoading, setDbLoading] = useState(false); const [ack, setAck] = useState(''); const [evidence, setEvidence] = useState<Evidence[]>([]);
+  const characterGuard = useMemo(() => checkIncidentCharacters(description), [description]); const scam = useMemo(() => scamCheck(scamInput), [scamInput]); const statuses = useMemo(() => buildStatusTimeline(syntheticHistoricalCases, triage.incidentType, 6), [triage.incidentType]); const range = useMemo(() => calculateTypicalRange(syntheticHistoricalCases, triage.incidentType), [triage.incidentType]); const signals = useMemo(() => { const q = intelligenceQuery.trim().toLowerCase(); return q ? publicCaseSignals.filter(s => `${s.identifier} ${s.category} ${s.patterns.join(' ')}`.toLowerCase().includes(q)) : publicCaseSignals; }, [intelligenceQuery]);
   function route(journey: Journey, reason = '') { setTriage(overrideTriage(journey)); setTriageReason(reason); setDescription(story || demoStory); setStage(journey); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   async function chooseWithAI() { if (!story.trim()) return; setTriageLoading(true); try { const r = await aiTriage(story); route(r.journey, r.reason); } catch { const r = classifyWithRules(story); route(r.journey, `Rule fallback: ${r.label}`); } finally { setTriageLoading(false); } }
   async function generateDraft() { setAiLoading(true); try { const r = await aiDraft({ story: description, amount, approximateTime, platform }); setDraft(r); setDraftSummary(r.summary); } catch { setDraft(extractIncidentDraft(description)); setDraftSummary('The local extraction is ready; live AI drafting needs the server API key.'); } finally { setAiLoading(false); } }
   async function explainScam() { if (!scamInput.trim()) return; try { const signal = scam.signature ? `${scam.signature.kind}: ${scam.signature.label}` : 'No signature matched'; const r = await aiScamReason({ query: scamInput, result: scam.result, signal }); setScamExplanation(r.explanation); } catch { setScamExplanation('The deterministic scan is the authoritative result.'); } }
   async function submitReport() { const id = `FR-${new Date().toISOString().slice(2,10).replaceAll('-', '')}-${Math.floor(1000 + Math.random() * 9000)}`; const category = safetyIssue || (triage.incidentType === 'financial_fraud' ? 'Financial fraud' : 'Cybercrime report'); try { const r = await fetch('/api/complaints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, journey: triage.journey, category, story: description, amount, platform }) }); const data = await r.json(); setDbConnected(Boolean(data.connected)); } catch {} setAck(id); setStage('submitted'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   async function loadComplaints() { setDbLoading(true); try { const r = await fetch('/api/complaints'); const data = await r.json(); setComplaints(data.complaints || []); setDbConnected(Boolean(data.connected)); } finally { setDbLoading(false); } }
-
-  const tactileStyles = `
-    .btn,.path-card,.ai-fab,.hero-input button,.intelligence-search button,.evidence-grid button,.call1930,.category-pills button,.issue-grid button{position:relative;transform:translateY(0);transition:transform .16s ease,box-shadow .16s ease,filter .16s ease,border-color .16s ease;}
-    .btn,.hero-input button,.intelligence-search button,.ai-fab{box-shadow:0 5px 0 rgba(15,20,40,.18),0 10px 18px rgba(15,20,40,.10);}
-    .btn:hover,.hero-input button:hover,.intelligence-search button:hover,.ai-fab:hover{transform:translateY(-2px);filter:brightness(1.02);}
-    .btn:active,.hero-input button:active,.intelligence-search button:active,.ai-fab:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(15,20,40,.18),0 4px 8px rgba(15,20,40,.08);}
-    .path-card{box-shadow:0 6px 0 rgba(15,20,40,.14),0 15px 30px rgba(15,20,40,.09);}
-    .path-card:hover{transform:translateY(-4px);box-shadow:0 10px 0 rgba(15,20,40,.14),0 22px 40px rgba(15,20,40,.13);}
-    .path-card:active{transform:translateY(2px);box-shadow:0 3px 0 rgba(15,20,40,.14),0 8px 14px rgba(15,20,40,.08);}
-    .evidence-grid button,.category-pills button,.issue-grid button{box-shadow:0 3px 0 rgba(15,20,40,.12);}
-    .evidence-grid button:active,.category-pills button:active,.issue-grid button:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(15,20,40,.12);}
-    .ai-helper{z-index:60}.ai-fab{border:1px solid rgba(255,255,255,.18)!important}.ai-pop{box-shadow:0 24px 60px rgba(15,20,40,.22)!important}.ai-close{margin-left:auto;border:0;background:transparent;color:var(--slate);font-size:24px;cursor:pointer}.ai-messages{display:grid;gap:8px;max-height:270px;overflow:auto;padding:10px 2px}.ai-message{max-width:88%;padding:10px 12px;border-radius:15px;font-size:13px;line-height:1.45}.ai-message.assistant{background:var(--teal-soft);color:var(--navy);border-bottom-left-radius:5px}.ai-message.user{justify-self:end;background:var(--navy);color:#fff;border-bottom-right-radius:5px}.ai-composer{display:flex;gap:7px;align-items:end;margin-top:8px}.ai-composer textarea{flex:1;min-height:48px;max-height:100px;resize:none;border:1px solid var(--line);border-radius:13px;padding:10px;background:#fff;color:var(--navy);outline:none}.ai-composer button{width:48px;height:48px;border:0;border-radius:13px;background:var(--red);color:#fff;font-size:21px;cursor:pointer;box-shadow:0 4px 0 rgba(105,31,22,.25)}.ai-composer button:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(105,31,22,.25)}.ai-safety-note{display:block;color:var(--slate);font-size:9px;line-height:1.35;margin-top:7px}.ai-fab-face{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#fff;color:var(--navy);font-size:12px}.typing{display:flex;gap:3px}.typing i{width:5px;height:5px;border-radius:50%;background:var(--teal);animation:chatDot 1s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}@keyframes chatDot{50%{opacity:.25;transform:translateY(-2px)}}
-    @media (prefers-reduced-motion:reduce){.btn,.path-card,.ai-fab,.hero-input button,.intelligence-search button{transition:none!important}.ai-message,.typing i{animation:none!important}}
-  `;
-
-  return <main className="app-shell"><style>{tactileStyles}</style><div className="page-frame"><Header onHome={() => setStage('home')} onSafety={() => setStage('safety')} onIntelligence={() => setStage('intelligence')} onStatus={() => { setStage('status'); loadComplaints(); }} />
+  return <main className="app-shell"><div className="page-frame"><Header onHome={() => setStage('home')} onSafety={() => setStage('safety')} onIntelligence={() => setStage('intelligence')} onStatus={() => { setStage('status'); loadComplaints(); }} />
     {stage === 'home' && <>
-      <section className="hero-new"><div className="hero-copy-new"><p className="eyebrow">CITIZEN CYBER RESPONSE</p><h1>Something happened online?<br/><em>Start here.</em></h1><p className="hero-lede">Tell us what happened in your own words. First Response helps you understand the risk, preserve evidence and choose the right next step.</p><div className="hero-input"><span>✦</span><input value={story} onChange={e => setStory(e.target.value)} placeholder="“Someone is threatening me on Instagram…”" onKeyDown={e => { if (e.key === 'Enter') chooseWithAI(); }} /><button onClick={chooseWithAI} disabled={triageLoading || !story.trim()}>{triageLoading ? '…' : '→'}</button></div><div className="hero-meta"><span>AI-guided</span><i/> <span>Evidence-first</span><i/> <span>Human-readable</span></div></div><div className="hero-character"><div className="character-glow"/><div className="character-figure" aria-label="First Response cyber safety officer illustration"><img className="officer-art" src="/first-response-officer.svg" alt="Cute Indian cyber safety police officer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', zIndex: 10, pointerEvents: 'none', filter: 'drop-shadow(0 18px 24px rgba(15,20,40,.12))' }}/><div className="char-head" style={{ display: 'none' }}><span className="char-hair"/><span className="char-eye e1"/><span className="char-eye e2"/><span className="char-smile"/></div><div className="char-cap" style={{ display: 'none' }}>✦</div><div className="char-body" style={{ display: 'none' }}><span className="char-badge">CYBER</span><span className="char-pocket p1"/><span className="char-pocket p2"/></div></div><div className="speech">I’ll help you<br/><b>take the right next step.</b></div></div></section>
+      <section className="hero-new"><div className="hero-copy-new"><p className="eyebrow">CITIZEN CYBER RESPONSE</p><h1>Something happened online?<br/><em>Start here.</em></h1><p className="hero-lede">Tell us what happened in your own words. First Response helps you understand the risk, preserve evidence and choose the right next step.</p><div className="hero-input"><span>✦</span><input value={story} onChange={e => setStory(e.target.value)} placeholder="“Someone is threatening me on Instagram…”" onKeyDown={e => { if (e.key === 'Enter') chooseWithAI(); }} /><button onClick={chooseWithAI} disabled={triageLoading || !story.trim()}>{triageLoading ? '…' : '→'}</button></div><div className="hero-meta"><span>AI-guided</span><i/> <span>Evidence-first</span><i/> <span>Human-readable</span></div></div><div className="hero-character"><div className="character-glow"/><div className="character-figure" aria-label="First Response cyber safety officer illustration"><img className="officer-art" src="/first-response-officer.svg" alt="Cute Indian cyber safety police officer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', zIndex: 10, pointerEvents: 'none', filter: 'drop-shadow(0 18px 24px rgba(15,20,40,.12))' }}/></div><div className="speech">I’ll help you<br/><b>take the right next step.</b></div></div></section>
       <section className="path-section"><div className="section-head"><div><p className="eyebrow">CHOOSE A STARTING POINT</p><h2>What do you need right now?</h2></div><span>01 — 04</span></div><div className="path-grid"><PathCard tone="urgent" icon="!" label="URGENT · FINANCIAL FRAUD" title="Money is moving right now" text="Act first. Get the 1930 route and prepare the essentials." onClick={() => route('urgent')} /><PathCard tone="safe" icon="◎" label="ONLINE SAFETY" title="I’m being bullied or threatened" text="Build an evidence-first safety plan for harassment, threats or blackmail." onClick={() => setStage('safety')} /><PathCard tone="report" icon="＋" label="REPORT" title="I need to report something" text="Cyberbullying, impersonation, account takeover, scams and more." onClick={() => route('standard')} /><PathCard tone="track" icon="↗" label="TRACK" title="I already filed a complaint" text="Find your reference and understand what happens next." onClick={() => { setStage('status'); loadComplaints(); }} /></div></section>
       <section className="intel-teaser"><div><p className="eyebrow">CYBERCRIME INTELLIGENCE</p><h2>Check a phone, UPI ID, URL or social handle.</h2><p>Search available risk signals before you trust it. A clean result is never a guarantee of safety.</p></div><button className="btn navy" onClick={() => setStage('intelligence')}>Check a signal →</button></section>
       <section className="how-section"><div className="section-head"><div><p className="eyebrow">HOW IT WORKS</p><h2>From confusion to a clear trail.</h2></div></div><div className="how-grid"><article><b>01</b><h3>Understand</h3><p>AI turns a messy story into a plain-language incident summary and explains why a route was chosen.</p></article><article><b>02</b><h3>Preserve</h3><p>Evidence Vault keeps screenshots, identifiers, URLs and a simple incident timeline together.</p></article><article><b>03</b><h3>Act</h3><p>Urgent financial cases surface 1930 first; other cases move into a calmer reporting flow.</p></article><article><b>04</b><h3>Track</h3><p>A case reference and timeline make the next step visible instead of leaving you guessing.</p></article></div></section>
