@@ -10,6 +10,16 @@ export async function aiTriage(story: string): Promise<{ journey: Journey; reaso
   return response.json();
 }
 
+export async function aiChat(messages: { role: 'user' | 'assistant'; content: string }[]): Promise<{ reply: string; journey: Journey }> {
+  const response = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ operation: 'chat', messages }),
+  });
+  if (!response.ok) throw new Error('AI chat unavailable');
+  return response.json();
+}
+
 export async function aiDraft(input: { story: string; amount: string; approximateTime: string; platform: string }): Promise<IncidentDraft & { summary: string }> {
   const response = await fetch('/api/ai', {
     method: 'POST',
