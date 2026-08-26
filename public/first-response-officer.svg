@@ -1,4 +1,62 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 751 1502" role="img" aria-label="Cute Indian cyber safety police officer">
-<defs><filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#172033" flood-opacity=".18"/></filter></defs>
-<image href="data:image/jpeg;base64,REPLACE_ME" width="751" height="1502" preserveAspectRatio="xMidYMid meet" filter="url(#shadow)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 760" role="img" aria-label="Cute Indian cyber safety police officer">
+<defs>
+ <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffc092"/><stop offset="1" stop-color="#e7835d"/></linearGradient>
+ <linearGradient id="uniform" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d9b47a"/><stop offset="1" stop-color="#b88955"/></linearGradient>
+ <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d8ad6c"/><stop offset="1" stop-color="#b47d42"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="15" stdDeviation="14" flood-color="#172033" flood-opacity=".2"/></filter>
+ <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter>
+</defs>
+<ellipse cx="260" cy="730" rx="155" ry="20" fill="#182033" opacity=".13"/>
+<ellipse cx="260" cy="350" rx="190" ry="220" fill="#2f9e8f" opacity=".09" filter="url(#soft)"/>
+<!-- shoulders and arms -->
+<path d="M126 500 Q72 530 65 650 Q64 698 103 702 Q132 704 137 671 L152 570Z" fill="url(#uniform)" stroke="#8e673f" stroke-width="4" filter="url(#shadow)"/>
+<path d="M394 500 Q448 530 455 650 Q456 698 417 702 Q388 704 383 671 L368 570Z" fill="url(#uniform)" stroke="#8e673f" stroke-width="4"/>
+<path d="M92 635 Q77 676 88 712 Q96 733 119 723 Q135 715 128 686 L120 640Z" fill="url(#skin)"/>
+<path d="M428 635 Q443 676 432 712 Q424 733 401 723 Q385 715 392 686 L400 640Z" fill="url(#skin)"/>
+<!-- body -->
+<path d="M137 465 Q145 430 188 412 L332 412 Q375 430 383 465 L410 706 Q260 747 110 706Z" fill="url(#uniform)" stroke="#8e673f" stroke-width="4" filter="url(#shadow)"/>
+<path d="M260 424 L260 706" stroke="#987149" stroke-width="3" opacity=".7"/>
+<!-- pockets -->
+<rect x="145" y="520" width="87" height="82" rx="12" fill="#c29a62" stroke="#8e673f" stroke-width="4"/>
+<rect x="288" y="520" width="87" height="82" rx="12" fill="#c29a62" stroke="#8e673f" stroke-width="4"/>
+<path d="M150 544 L227 544 M293 544 L370 544" stroke="#8e673f" stroke-width="3" opacity=".7"/>
+<circle cx="188" cy="564" r="6" fill="#7d5c3c"/><circle cx="332" cy="564" r="6" fill="#7d5c3c"/>
+<!-- shoulder stars -->
+<g fill="#f0f2f4" stroke="#747b85" stroke-width="2"><path d="M143 475 l7 12 14 2-10 10 2 14-13-7-13 7 2-14-10-10 14-2z"/><path d="M177 468 l7 12 14 2-10 10 2 14-13-7-13 7 2-14-10-10 14-2z"/><path d="M377 475 l7 12 14 2-10 10 2 14-13-7-13 7 2-14-10-10 14-2z"/><path d="M343 468 l7 12 14 2-10 10 2 14-13-7-13 7 2-14-10-10 14-2z"/></g>
+<!-- neck -->
+<path d="M214 380 L306 380 L318 455 Q260 480 202 455Z" fill="url(#skin)"/>
+<!-- face -->
+<ellipse cx="260" cy="270" rx="112" ry="132" fill="url(#skin)" stroke="#b96147" stroke-width="3"/>
+<ellipse cx="152" cy="290" rx="20" ry="32" fill="#e98a63"/><ellipse cx="368" cy="290" rx="20" ry="32" fill="#e98a63"/>
+<!-- hair -->
+<path d="M153 254 Q132 115 260 103 Q388 115 367 254 Q347 208 309 194 Q260 214 211 194 Q174 208 153 254Z" fill="#33231e"/>
+<path d="M154 210 Q132 280 165 334 Q181 352 194 331 L186 245Z" fill="#33231e"/>
+<path d="M366 210 Q388 280 355 334 Q339 352 326 331 L334 245Z" fill="#33231e"/>
+<path d="M184 156 Q215 126 248 126" fill="none" stroke="#5a3c2d" stroke-width="8" stroke-linecap="round" opacity=".65"/>
+<!-- eyes -->
+<ellipse cx="213" cy="273" rx="30" ry="37" fill="#fff"/><ellipse cx="307" cy="273" rx="30" ry="37" fill="#fff"/>
+<ellipse cx="216" cy="278" rx="15" ry="21" fill="#3b2419"/><ellipse cx="304" cy="278" rx="15" ry="21" fill="#3b2419"/>
+<circle cx="221" cy="270" r="6" fill="#fff"/><circle cx="309" cy="270" r="6" fill="#fff"/>
+<path d="M183 238 Q211 218 236 236" fill="none" stroke="#3b2922" stroke-width="8" stroke-linecap="round"/><path d="M284 236 Q309 218 337 238" fill="none" stroke="#3b2922" stroke-width="8" stroke-linecap="round"/>
+<!-- nose + smile -->
+<path d="M260 275 Q246 315 261 318 Q273 318 279 307" fill="none" stroke="#bd684f" stroke-width="5" stroke-linecap="round"/>
+<path d="M220 337 Q260 370 300 337 Q289 383 260 384 Q231 383 220 337Z" fill="#e9756d" opacity=".9"/>
+<path d="M231 346 Q260 360 289 346" fill="none" stroke="#9f4b46" stroke-width="4" stroke-linecap="round"/>
+<circle cx="168" cy="326" r="8" fill="#f1c35e"/><circle cx="352" cy="326" r="8" fill="#f1c35e"/>
+<!-- cap -->
+<path d="M145 178 Q150 74 260 62 Q370 74 375 178 Q329 145 260 148 Q191 145 145 178Z" fill="url(#cap)" stroke="#8e673f" stroke-width="6"/>
+<path d="M132 170 Q260 132 388 170 L377 202 Q260 164 143 202Z" fill="#9e713e" stroke="#805a34" stroke-width="4"/>
+<!-- insignia -->
+<g transform="translate(260 108)"><path d="M-27 0 Q0-28 27 0 L20 25 Q0 16-20 25Z" fill="#eef1f4" stroke="#737b84" stroke-width="3"/><path d="M-10 0 h20 v18 h-20z" fill="#b9bec5"/><circle cy="-4" r="7" fill="#d9dde2"/><path d="M-35 26 Q0 10 35 26" fill="none" stroke="#737b84" stroke-width="4"/></g>
+<!-- collar -->
+<path d="M204 417 L260 453 L225 488 L185 438Z" fill="#c49b64" stroke="#8e673f" stroke-width="3"/><path d="M316 417 L260 453 L295 488 L335 438Z" fill="#c49b64" stroke="#8e673f" stroke-width="3"/>
+<!-- badge -->
+<rect x="169" y="489" width="90" height="25" rx="5" fill="#182033"/><text x="214" y="506" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="800" fill="#fff">INDIAN POLICE</text>
+<!-- tricolour ribbon -->
+<rect x="294" y="475" width="58" height="28" rx="4" fill="#f3eee3" stroke="#8e673f" stroke-width="2"/><rect x="299" y="480" width="15" height="18" fill="#ef7b32"/><rect x="314" y="480" width="15" height="18" fill="#fff"/><rect x="329" y="480" width="18" height="18" fill="#198754"/><circle cx="321" cy="489" r="3" fill="#2f5fa7"/>
+<!-- blue cord -->
+<path d="M354 505 Q400 545 367 620" fill="none" stroke="#263f6b" stroke-width="10" stroke-linecap="round"/>
+<!-- belt -->
+<path d="M111 650 Q260 685 409 650 L414 696 Q260 730 106 696Z" fill="#714225"/>
+<rect x="229" y="667" width="62" height="48" rx="8" fill="#bdc3ca" stroke="#6e747c" stroke-width="4"/><circle cx="260" cy="691" r="12" fill="#80878f"/><path d="M252 691 l8-10 8 10-8 10z" fill="#d9dde1"/>
 </svg>
