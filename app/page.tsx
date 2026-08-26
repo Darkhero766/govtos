@@ -3,149 +3,85 @@
 import { useMemo, useState } from 'react';
 import { aiDraft, aiScamReason, aiTriage } from '../ai/openaiClient';
 import { extractIncidentDraft } from '../ai/extractIncidentDraft';
-import { PrototypeBanner } from '../components/PrototypeBanner';
-import { LargeActionButton } from '../components/LargeActionButton';
-import { ReviewSection } from '../components/ReviewSection';
-import { syntheticHistoricalCases } from '../data/syntheticCases';
+import { publicCaseSignals, type CaseSignal } from '../data/publicCaseSignals';
 import { scamCheck } from '../scam-check/scamCheck';
 import { buildStatusTimeline, calculateTypicalRange } from '../status/statusMachine';
 import { classifyWithRules, overrideTriage, type TriageResult } from '../triage/triageRules';
 import { checkIncidentCharacters } from '../validation/characterGuard';
+import { syntheticHistoricalCases } from '../data/syntheticCases';
 import type { Journey } from '../types/models';
+import './winner.css';
+
+type Stage = 'home' | 'urgent' | 'standard' | 'safety' | 'intelligence' | 'status' | 'submitted';
+type Evidence = { id: string; label: string; type: string };
 
 const demoStory = 'A caller pretended to be from my bank and I transferred ₹18,500.';
-type Stage = 'triage' | 'urgent' | 'standard' | 'status' | 'submitted';
 
-function ChatHelper({ onRoute }: { onRoute: (journey: Journey, reason: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const [text, setText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [answer, setAnswer] = useState('');
-  async function ask() {
-    if (!text.trim()) return;
-    setLoading(true); setAnswer('');
-    try { const result = await aiTriage(text.trim()); setAnswer(result.reason); onRoute(result.journey, result.reason); }
-    catch { const fallback = classifyWithRules(text.trim()); setAnswer(`I would start with ${fallback.label}. You can choose another route if that feels wrong.`); onRoute(fallback.journey, `AI helper fallback: ${fallback.label}.`); }
-    finally { setLoading(false); }
-  }
-  return <div className="ai-helper">
-    {open && <div className="ai-helper-panel" role="dialog" aria-label="First Response AI helper">
-      <div className="ai-helper-head"><span className="ai-dot">✦</span><div><strong>Ask First Response</strong><small>Describe the situation. I’ll help you choose a path.</small></div></div>
-      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="What happened?" aria-label="Ask First Response" />
-      {answer && <p className="ai-helper-answer">{answer}</p>}
-      <button type="button" onClick={ask} disabled={loading || !text.trim()}>{loading ? 'Thinking…' : 'Help me choose'}</button>
-    </div>}
-    <button type="button" className="ai-helper-button" onClick={() => setOpen((v) => !v)} aria-label="Open AI helper"><span>✦</span><small>AI</small></button>
-  </div>;
+function Header({ onHome, onSafety, onIntelligence, onStatus }: { onHome: () => void; onSafety: () => void; onIntelligence: () => void; onStatus: () => void }) {
+  return <header className="topbar"><button className="brand" onClick={onHome} aria-label="First Response home"><span className="brand-mark">FR</span><span><b>First Response</b><small>Cyber help, made understandable</small></span></button><nav aria-label="Primary"><button onClick={onSafety}>Online safety</button><button onClick={onIntelligence}>Check a signal</button><button onClick={onStatus}>Track</button><span className="lang-pill">हिंदी</span></nav></header>;
+}
+
+function AIHelper({ onRoute }: { onRoute: (j: Journey, reason: string) => void }) {
+  const [open, setOpen] = useState(false); const [text, setText] = useState(''); const [answer, setAnswer] = useState(''); const [loading, setLoading] = useState(false);
+  async function ask() { if (!text.trim()) return; setLoading(true); try { const r = await aiTriage(text); setAnswer(r.reason); onRoute(r.journey, r.reason); } catch { const r = classifyWithRules(text); setAnswer(`A good starting point is ${r.label}. You can always change this.`); onRoute(r.journey, r.label); } finally { setLoading(false); } }
+  return <div className="ai-helper"><button className="ai-fab" onClick={() => setOpen(!open)} aria-expanded={open}>✦ <span>Ask AI</span></button>{open && <div className="ai-pop" role="dialog" aria-label="First Response AI"><div className="ai-pop-head"><span className="ai-spark">✦</span><div><b>First Response AI</b><small>Tell me what happened. I’ll help sort the next step.</small></div></div><textarea value={text} onChange={e => setText(e.target.value)} placeholder="For example: Someone is threatening me on Instagram…" />{answer && <div className="ai-answer">{answer}</div>}<button className="btn navy" onClick={ask} disabled={loading || !text.trim()}>{loading ? 'Understanding…' : 'Help me decide'}</button></div>}</div>;
+}
+
+function PathCard({ tone, icon, label, title, text, onClick }: { tone: string; icon: string; label: string; title: string; text: string; onClick: () => void }) {
+  return <button className={`path-card ${tone}`} onClick={onClick}><span className="path-icon">{icon}</span><span className="path-copy"><small>{label}</small><b>{title}</b><span>{text}</span></span><strong className="path-arrow">→</strong></button>;
 }
 
 export default function Home() {
-  const [stage, setStage] = useState<Stage>('triage');
-  const [story, setStory] = useState('');
-  const [showDescribe, setShowDescribe] = useState(false);
+  const [stage, setStage] = useState<Stage>('home');
+  const [story, setStory] = useState(''); const [showAIInput, setShowAIInput] = useState(false); const [triageReason, setTriageReason] = useState(''); const [triageLoading, setTriageLoading] = useState(false);
   const [triage, setTriage] = useState<TriageResult>(() => classifyWithRules(demoStory));
-  const [triageReason, setTriageReason] = useState('');
-  const [triageLoading, setTriageLoading] = useState(false);
-  const [amount, setAmount] = useState('₹18,500');
-  const [approximateTime, setApproximateTime] = useState("We don't know this yet.");
-  const [platform, setPlatform] = useState("We don't know this yet.");
-  const [description, setDescription] = useState(demoStory);
-  const [draft, setDraft] = useState(() => extractIncidentDraft(demoStory));
-  const [draftSummary, setDraftSummary] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
-  const [scamInput, setScamInput] = useState('');
-  const [scamExplanation, setScamExplanation] = useState('');
-  const [approved, setApproved] = useState(false);
-  const [ack, setAck] = useState('FR-DEMO-2026-0812');
+  const [description, setDescription] = useState(demoStory); const [amount, setAmount] = useState('₹18,500'); const [platform, setPlatform] = useState(''); const [approximateTime, setApproximateTime] = useState('');
+  const [draft, setDraft] = useState(() => extractIncidentDraft(demoStory)); const [draftSummary, setDraftSummary] = useState(''); const [aiLoading, setAiLoading] = useState(false);
+  const [scamInput, setScamInput] = useState(''); const [scamExplanation, setScamExplanation] = useState(''); const [approved, setApproved] = useState(false);
+  const [safetyIssue, setSafetyIssue] = useState(''); const [intelligenceQuery, setIntelligenceQuery] = useState(''); const [selectedSignal, setSelectedSignal] = useState<CaseSignal | null>(null); const [complaints, setComplaints] = useState<any[]>([]); const [dbConnected, setDbConnected] = useState(false); const [dbLoading, setDbLoading] = useState(false); const [ack, setAck] = useState('');
+  const [evidence, setEvidence] = useState<Evidence[]>([]);
 
   const characterGuard = useMemo(() => checkIncidentCharacters(description), [description]);
   const scam = useMemo(() => scamCheck(scamInput), [scamInput]);
   const statuses = useMemo(() => buildStatusTimeline(syntheticHistoricalCases, triage.incidentType, 6), [triage.incidentType]);
   const range = useMemo(() => calculateTypicalRange(syntheticHistoricalCases, triage.incidentType), [triage.incidentType]);
+  const signals = useMemo(() => { const q = intelligenceQuery.trim().toLowerCase(); return q ? publicCaseSignals.filter(s => `${s.identifier} ${s.category} ${s.patterns.join(' ')}`.toLowerCase().includes(q)) : publicCaseSignals; }, [intelligenceQuery]);
 
-  function route(journey: Journey, reason = '') {
-    setTriage(overrideTriage(journey)); setTriageReason(reason); setDescription(story || demoStory); setAiError(''); setStage(journey);
-  }
-  async function continueFromFreeText() {
-    if (!story.trim()) return;
-    setTriageLoading(true); setAiError('');
-    try { const result = await aiTriage(story); route(result.journey, result.reason); }
-    catch { const fallback = classifyWithRules(story); route(fallback.journey, `AI fallback chose ${fallback.label}. You can override it.`); setAiError('AI is unavailable, so the transparent rule-based fallback was used.'); }
-    finally { setTriageLoading(false); }
-  }
-  async function generateDraft() {
-    setAiLoading(true); setAiError('');
-    try { const result = await aiDraft({ story: description, amount, approximateTime, platform }); setDraft(result); setDraftSummary(result.summary); }
-    catch { setDraft(extractIncidentDraft(description)); setDraftSummary('AI drafting is unavailable; this preview uses deterministic extraction.'); setAiError('Add OPENAI_API_KEY to enable live drafting.'); }
-    finally { setAiLoading(false); }
-  }
-  async function explainScam() {
-    if (!scamInput.trim()) return;
-    try { const signal = scam.signature ? `${scam.signature.kind}: ${scam.signature.label}` : 'No deterministic signature matched.'; const result = await aiScamReason({ query: scamInput, result: scam.result, signal }); setScamExplanation(result.explanation); }
-    catch { setScamExplanation('AI reasoning is unavailable. The deterministic verdict remains authoritative.'); }
-  }
-  function submitMockReport() { setAck(`FR-DEMO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`); setStage('submitted'); }
+  function route(journey: Journey, reason = '') { setTriage(overrideTriage(journey)); setTriageReason(reason); setDescription(story || demoStory); setStage(journey); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  async function chooseWithAI() { if (!story.trim()) return; setTriageLoading(true); try { const r = await aiTriage(story); route(r.journey, r.reason); } catch { const r = classifyWithRules(story); route(r.journey, `Rule fallback: ${r.label}`); } finally { setTriageLoading(false); } }
+  async function generateDraft() { setAiLoading(true); try { const r = await aiDraft({ story: description, amount, approximateTime, platform }); setDraft(r); setDraftSummary(r.summary); } catch { setDraft(extractIncidentDraft(description)); setDraftSummary('The local extraction is ready; live AI drafting needs the server API key.'); } finally { setAiLoading(false); } }
+  async function explainScam() { if (!scamInput.trim()) return; try { const signal = scam.signature ? `${scam.signature.kind}: ${scam.signature.label}` : 'No signature matched'; const r = await aiScamReason({ query: scamInput, result: scam.result, signal }); setScamExplanation(r.explanation); } catch { setScamExplanation('The deterministic scan is the authoritative result.'); } }
+  async function submitReport() { const id = `FR-${new Date().toISOString().slice(2,10).replaceAll('-', '')}-${Math.floor(1000 + Math.random() * 9000)}`; const category = safetyIssue || (triage.incidentType === 'financial_fraud' ? 'Financial fraud' : 'Cybercrime report'); try { const r = await fetch('/api/complaints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, journey: triage.journey, category, story: description, amount, platform }) }); const data = await r.json(); setDbConnected(Boolean(data.connected)); } catch {} setAck(id); setStage('submitted'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  async function loadComplaints() { setDbLoading(true); try { const r = await fetch('/api/complaints'); const data = await r.json(); setComplaints(data.complaints || []); setDbConnected(Boolean(data.connected)); } finally { setDbLoading(false); } }
 
-  return <main className="app-shell">
-    <div className="page-frame">
-      <div className="service-strip"><span>PUBLIC SERVICE PROTOTYPE</span><span>Citizen cyber response</span></div>
-      <div className="brand-row">
-        <div className="brand"><span className="brand-mark" aria-hidden="true">FR</span><span>First Response</span></div>
-        <span className="brand-subtle">Triage · Report · Track</span>
-      </div>
+  return <main className="app-shell"><div className="page-frame"><Header onHome={() => setStage('home')} onSafety={() => setStage('safety')} onIntelligence={() => setStage('intelligence')} onStatus={() => { setStage('status'); loadComplaints(); }} />
+    {stage === 'home' && <>
+      <section className="hero-new"><div className="hero-copy-new"><p className="eyebrow">CITIZEN CYBER RESPONSE</p><h1>Something happened online?<br/><em>Start here.</em></h1><p className="hero-lede">Tell us what happened in your own words. First Response helps you understand the risk, preserve evidence and choose the right next step.</p><div className="hero-input"><span>✦</span><input value={story} onChange={e => setStory(e.target.value)} placeholder="“Someone is threatening me on Instagram…”" onKeyDown={e => { if (e.key === 'Enter') chooseWithAI(); }} /><button onClick={chooseWithAI} disabled={triageLoading || !story.trim()}>{triageLoading ? '…' : '→'}</button></div><div className="hero-meta"><span>AI-guided</span><i/> <span>Evidence-first</span><i/> <span>Human-readable</span></div></div><div className="hero-character"><div className="character-glow"/><div className="character-figure" aria-label="First Response cyber safety officer illustration"><div className="char-head"><span className="char-hair"/><span className="char-eye e1"/><span className="char-eye e2"/><span className="char-smile"/></div><div className="char-cap">✦</div><div className="char-body"><span className="char-badge">CYBER</span><span className="char-pocket p1"/><span className="char-pocket p2"/></div></div><div className="speech">I’ll help you<br/><b>take the right next step.</b></div></div></section>
+      <section className="path-section"><div className="section-head"><div><p className="eyebrow">CHOOSE A STARTING POINT</p><h2>What do you need right now?</h2></div><span>01 — 04</span></div><div className="path-grid"><PathCard tone="urgent" icon="!" label="URGENT · FINANCIAL FRAUD" title="Money is moving right now" text="Act first. Get the 1930 route and prepare the essentials." onClick={() => route('urgent')} /><PathCard tone="safe" icon="◎" label="ONLINE SAFETY" title="I’m being bullied or threatened" text="Build an evidence-first safety plan for harassment, threats or blackmail." onClick={() => setStage('safety')} /><PathCard tone="report" icon="＋" label="REPORT" title="I need to report something" text="Cyberbullying, impersonation, account takeover, scams and more." onClick={() => route('standard')} /><PathCard tone="track" icon="↗" label="TRACK" title="I already filed a complaint" text="Find your reference and understand what happens next." onClick={() => { setStage('status'); loadComplaints(); }} /></div></section>
+      <section className="intel-teaser"><div><p className="eyebrow">CYBERCRIME INTELLIGENCE</p><h2>Check a phone, UPI ID, URL or social handle.</h2><p>Search available risk signals before you trust it. A clean result is never a guarantee of safety.</p></div><button className="btn navy" onClick={() => setStage('intelligence')}>Check a signal →</button></section>
+      <section className="how-section"><div className="section-head"><div><p className="eyebrow">HOW IT WORKS</p><h2>From confusion to a clear trail.</h2></div></div><div className="how-grid"><article><b>01</b><h3>Understand</h3><p>AI turns a messy story into a plain-language incident summary and explains why a route was chosen.</p></article><article><b>02</b><h3>Preserve</h3><p>Evidence Vault keeps screenshots, identifiers, URLs and a simple incident timeline together.</p></article><article><b>03</b><h3>Act</h3><p>Urgent financial cases surface 1930 first; other cases move into a calmer reporting flow.</p></article><article><b>04</b><h3>Track</h3><p>A case reference and timeline make the next step visible instead of leaving you guessing.</p></article></div></section>
+      <section className="voice-banner"><div><p className="eyebrow">MADE FOR REAL PEOPLE</p><h2>Type it. Speak it. Even in Hindi.</h2><p>The interface is designed around plain language, large controls and voice-friendly conversations.</p></div><button className="btn light" onClick={() => setShowAIInput(true)}>{showAIInput ? 'AI helper ready' : 'Try AI helper ✦'}</button></section>
+      <footer className="site-footer-new"><div><b>FIRST RESPONSE</b><p>Cyber help that explains what to do next.</p></div><div><small>QUICK ACCESS</small><button onClick={() => setStage('safety')}>Online safety</button><button onClick={() => setStage('intelligence')}>Check a signal</button><button onClick={() => { setStage('status'); loadComplaints(); }}>Track a complaint</button></div><div><small>OFFICIAL ROUTES</small><a href="https://www.cybercrime.gov.in/" target="_blank" rel="noreferrer">National Cyber Crime Reporting Portal ↗</a><a href="tel:1930">Financial cyber fraud: 1930</a></div><div className="footer-bottom"><span>Independent citizen-service interface</span><span>Use official government channels for actual filing</span></div></footer>
+    </>}
 
-      {stage === 'triage' && <>
-        <section className="home-hero" aria-labelledby="home-title">
-          <div className="hero-orbit orbit-a" aria-hidden="true" /><div className="hero-orbit orbit-b" aria-hidden="true" />
-          <div className="hero-number">01 / 03</div>
-          <p className="eyebrow">Citizen-first response</p>
-          <h1 id="home-title" className="hero-title">What happened?</h1>
-          <p className="hero-copy">Start there. We’ll help you take the right next step.</p>
-          <div className="hero-steps"><span>01 Tell us</span><i /><span>02 Act</span><i /><span>03 Track</span></div>
-        </section>
+    {stage === 'urgent' && <section className="journey"><div className="journey-hero urgent"><p className="eyebrow">URGENT FINANCIAL FRAUD</p><h1>Act first. Report second.</h1><p>If money is moving or has just moved, speed matters.</p><a className="call1930" href="tel:1930"><span>1930</span><b>Call the national cyber fraud helpline</b><small>Open your phone dialer</small></a><div className="step-row"><span>1 Call 1930</span><span>2 Contact your bank</span><span>3 Preserve evidence</span></div></div><div className="content-card"><div className="card-heading"><span>AI CASE BUILDER</span><b>Prepare the essentials</b></div><textarea className="textarea-main" value={description} onChange={e => setDescription(e.target.value)} placeholder="What happened?"/><div className="two-col"><input className="field" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Amount / loss"/><input className="field" value={platform} onChange={e => setPlatform(e.target.value)} placeholder="Bank / payment platform"/></div><input className="field" value={approximateTime} onChange={e => setApproximateTime(e.target.value)} placeholder="Approximate time"/><button className="btn teal" onClick={generateDraft} disabled={aiLoading}>{aiLoading ? 'Drafting…' : 'Structure my complaint with AI'}</button>{draftSummary && <div className="result-note">{draftSummary}</div>}<div className="draft-grid"><span>Loss <b>{draft.amount}</b></span><span>Type <b>{draft.approximateIncidentType}</b></span><span>Evidence <b>{draft.possibleEvidence.length} signals</b></span></div></div><EvidenceVault evidence={evidence} setEvidence={setEvidence}/><button className="btn navy big" onClick={submitReport}>Create case & continue →</button><button className="back-link" onClick={() => setStage('home')}>← Back</button></section>}
 
-        <section className="home-actions reveal" aria-labelledby="action-title">
-          <div className="section-heading-row"><h2 id="action-title">Choose what fits</h2><span>3 clear paths</span></div>
-          <div className="triage-stack">
-            <LargeActionButton tone="danger" onClick={() => route('urgent')}>Money is being taken right now</LargeActionButton>
-            <LargeActionButton tone="calm" onClick={() => route('standard')}>I need to report something</LargeActionButton>
-            <LargeActionButton onClick={() => route('status')}>I already filed a complaint</LargeActionButton>
-          </div>
-        </section>
+    {stage === 'standard' && <section className="journey"><div className="journey-heading"><p className="eyebrow">REPORT A CYBERCRIME</p><h1>Tell the story first.</h1><p>Cyberbullying, threats, impersonation, account takeover, scams and other online harm.</p></div><div className="category-pills">{['Cyberbullying','Online threat','Impersonation','Blackmail','Account takeover'].map(x => <button key={x} onClick={() => setSafetyIssue(x)}>{x}</button>)}</div><div className="content-card"><div className="card-heading"><span>01 · INCIDENT</span><b>{safetyIssue || 'Describe what happened'}</b></div><textarea className="textarea-main" value={description} onChange={e => setDescription(e.target.value)} placeholder="Tell us in your own words…"/>{characterGuard.blocked && <div className="warning"><b>Character warning:</b> {characterGuard.message}</div>}<div className="two-col"><input className="field" value={platform} onChange={e => setPlatform(e.target.value)} placeholder="Platform (Instagram, WhatsApp, UPI…)"/><input className="field" value={approximateTime} onChange={e => setApproximateTime(e.target.value)} placeholder="When did it happen?"/></div></div><div className="content-card"><div className="card-heading"><span>02 · SCAN</span><b>Check suspicious content</b></div><p className="muted">Paste a full message, long URL, UPI ID, phone number, email or social handle. The scan can find a signal inside long text.</p><textarea className="scan-box" value={scamInput} onChange={e => { setScamInput(e.target.value); setScamExplanation(''); }} placeholder="Paste suspicious content here…"/>{scamInput && <div className={`scan-result ${scam.result === 'MATCH' ? 'match' : scam.result === 'INCONCLUSIVE' ? 'inconclusive' : 'not-found'}`}><b>{scam.result}</b><p>{scam.message}</p></div>}<button className="btn navy" onClick={explainScam} disabled={!scamInput.trim()}>Explain the signal with AI</button>{scamExplanation && <div className="result-note">{scamExplanation}</div>}</div><EvidenceVault evidence={evidence} setEvidence={setEvidence}/><label className="check-row"><input type="checkbox" checked={approved} onChange={e => setApproved(e.target.checked)}/><span>I reviewed the details and evidence I want to submit.</span></label><button className="btn teal big" disabled={!approved} onClick={submitReport}>Prepare my complaint →</button><button className="back-link" onClick={() => setStage('home')}>← Back</button></section>}
 
-        <section className="describe-collapsed reveal-delay">
-          <button type="button" onClick={() => setShowDescribe((v) => !v)} aria-expanded={showDescribe}>
-            <span><b>Not sure which path?</b><small>Describe it in your own words and let AI guide you</small></span><strong>{showDescribe ? '−' : '+'}</strong>
-          </button>
-          {showDescribe && <div className="describe-open"><textarea aria-label="Describe what happened" value={story} onChange={(e) => setStory(e.target.value)} placeholder="Example: Someone called pretending to be my bank…" /><button type="button" onClick={continueFromFreeText} disabled={triageLoading || !story.trim()} className="action-solid action-navy">{triageLoading ? 'Understanding…' : 'Let AI choose a path'}</button>{triageReason && <div className={`route-banner ${triage.journey === 'urgent' ? 'urgent' : triage.journey === 'standard' ? 'standard' : 'status'}`}><p className="route-label">Chosen route</p><p className="route-name">{triage.label}</p></div>}{aiError && <p role="status" className="error-panel mt-3 text-sm font-bold">{aiError}</p>}</div>}
-        </section>
+    {stage === 'safety' && <section className="journey"><div className="journey-hero safety"><p className="eyebrow">ONLINE SAFETY MODE</p><h1>You don't have to figure this out alone.</h1><p>For bullying, threats, stalking, blackmail, impersonation or unwanted sharing.</p></div><div className="content-card"><div className="card-heading"><span>WHAT'S HAPPENING?</span><b>Choose the closest fit</b></div><div className="issue-grid">{['Cyberbullying','Repeated harassment','Threats','Blackmail','Impersonation','Intimate-image abuse'].map(x => <button key={x} className={safetyIssue === x ? 'selected' : ''} onClick={() => setSafetyIssue(x)}>{x}</button>)}</div>{safetyIssue && <div className="safety-plan"><p className="eyebrow">YOUR FIRST STEPS</p><h3>{safetyIssue}</h3><div><b>01</b><span>Preserve messages, profile URLs and timestamps before blocking or deleting anything.</span></div><div><b>02</b><span>Save original screenshots and keep the conversation in context.</span></div><div><b>03</b><span>If there is an immediate threat to your physical safety, contact local emergency services.</span></div><div><b>04</b><span>When ready, First Response can structure the cybercrime report.</span></div></div>}</div><div className="content-card evidence-callout"><div><p className="eyebrow">EVIDENCE FIRST</p><h2>Build a clean trail before you report.</h2><p className="muted">A simple timeline can be more useful than a folder full of disconnected screenshots.</p></div><button className="btn navy" onClick={() => setStage('standard')}>Build my report →</button></div><button className="back-link" onClick={() => setStage('home')}>← Back</button></section>}
 
-        <section className="home-confidence reveal-delay-2" aria-label="How First Response works">
-          <div className="section-heading-row"><h2>Built for clarity</h2><span>Designed around people</span></div>
-          <div className="confidence-grid">
-            <article><span className="confidence-icon">01</span><h3>Explain first</h3><p>No legal language needed to begin.</p></article>
-            <article><span className="confidence-icon">02</span><h3>Act when it matters</h3><p>Urgent cases are surfaced before forms.</p></article>
-            <article><span className="confidence-icon">03</span><h3>Keep the trail</h3><p>Reports and status are easier to understand.</p></article>
-          </div>
-        </section>
+    {stage === 'intelligence' && <section className="journey"><div className="journey-heading"><p className="eyebrow">CYBERCRIME INTELLIGENCE</p><h1>Check before you trust.</h1><p>Search a phone number, UPI ID, URL, email or social handle against available risk signals.</p></div><div className="intelligence-search"><span>⌕</span><input value={intelligenceQuery} onChange={e => { setIntelligenceQuery(e.target.value); setSelectedSignal(null); }} placeholder="Paste an identifier or search term…"/><button onClick={() => setIntelligenceQuery(intelligenceQuery.trim())}>Search</button></div><p className="source-note">Signals shown here are labeled by source. A clean result never means safe.</p><div className="signal-list">{signals.map(s => <button key={s.id} className="signal-row" onClick={() => setSelectedSignal(s)}><span className={`signal-kind ${s.kind}`}>{s.kind}</span><div><b>{s.identifier}</b><small>{s.category} · {s.reports} reports in the available dataset</small></div><strong>→</strong></button>)}{!signals.length && <div className="empty-state"><b>No matching signal found.</b><p>This dataset has no match. It does not certify the identifier as safe.</p></div>}</div>{selectedSignal && <div className="signal-detail"><button className="close-detail" onClick={() => setSelectedSignal(null)}>×</button><p className="eyebrow">RISK SIGNAL</p><h2>{selectedSignal.identifier}</h2><div className="risk-stat"><b>{selectedSignal.reports}</b><span>available reports</span></div><p><b>Pattern:</b> {selectedSignal.category}</p><div className="pattern-list">{selectedSignal.patterns.map(p => <span key={p}>{p}</span>)}</div><small>Source: {selectedSignal.source} · Last reported {selectedSignal.lastReported}</small><button className="btn red" onClick={() => { setScamInput(selectedSignal.identifier); setStage('standard'); }}>Use in my report →</button></div>}<button className="back-link" onClick={() => setStage('home')}>← Back</button></section>}
 
-        <section className="home-note reveal-delay-3"><span className="note-rule" /><div><p className="eyebrow">A calmer public service</p><p>Clear language. Visible reasoning. No pretending that a prototype is a government system.</p></div></section>
-        <div className="home-spacer" aria-hidden="true" />
-      </>}
+    {stage === 'status' && <section className="journey"><div className="journey-heading"><p className="eyebrow">CASE TRACKER</p><h1>Know what happens next.</h1><p>Search your First Response reference to see the current case trail.</p></div><div className="intelligence-search"><span>⌕</span><input placeholder="FR-260814-4821" onChange={e => setIntelligenceQuery(e.target.value)} /><button onClick={loadComplaints}>{dbLoading ? '…' : 'Find'}</button></div><div className="connection-pill">{dbConnected ? '● Connected to complaint database' : '● Demo records available · connect Supabase for shared storage'}</div>{complaints.length > 0 ? complaints.map(c => <div key={c.id} className="case-row"><div><span className="reference">{c.id}</span><b>{c.category}</b><p>{c.story}</p></div><span className={`status-dot ${c.status}`}>{c.status === 'received' ? 'Received' : c.status === 'cyber_cell' ? 'With cyber cell' : 'Outcome shared'}</span></div>) : <button className="sample-case" onClick={loadComplaints}>Load available case records</button>}<div className="timeline"><div className="timeline-head"><span>CASE JOURNEY</span><b>Typical {range.min}–{range.max} days</b></div>{statuses.map((s, i) => <div className="timeline-item" key={s.state}><span className={`timeline-node ${i === 0 ? 'active' : ''}`}>{i + 1}</span><div><b>{s.title}</b><p>{s.meaning}</p><small>Next: {s.next}</small></div></div>)}</div><button className="back-link" onClick={() => setStage('home')}>← Back</button></section>}
 
-      {stage === 'urgent' && <section className="space-y-4"><div className="route-banner urgent mt-0"><p className="route-label">Urgent route</p><p className="route-name">Act first. Report second.</p><p className="mt-1 text-sm opacity-90">Time can matter when money is moving.</p></div><div className="urgent-panel"><p className="eyebrow !text-white opacity-80">Immediate action</p><h2>Call 1930 now</h2><p>Getting help quickly matters more than finishing a form.</p><button type="button" className="action-solid action-navy !bg-white !text-[#D6432E]">Simulate call prompt</button><p className="mt-2 text-xs font-semibold opacity-85">Mock only — no call or account freeze occurs.</p></div><ReviewSection title="Auto-drafted complaint — editable"><p className="text-sm">Review before anything is submitted.</p><textarea aria-label="Incident description" className="textarea-main" value={description} onChange={(e) => setDescription(e.target.value)} /><div className="grid gap-2"><input aria-label="Amount" className="field" value={amount} onChange={(e) => setAmount(e.target.value)} /><input aria-label="Approximate time" className="field" value={approximateTime} onChange={(e) => setApproximateTime(e.target.value)} /><input aria-label="Bank or payment platform" className="field" value={platform} onChange={(e) => setPlatform(e.target.value)} /></div><button type="button" onClick={generateDraft} disabled={aiLoading} className="action-solid action-teal">{aiLoading ? 'Drafting…' : 'Draft with OpenAI'}</button>{draftSummary && <p className="info-panel font-semibold">{draftSummary}</p>}<ul className="list-inside list-disc text-sm"><li>Amount: {draft.amount}</li><li>Incident: {draft.approximateIncidentType}</li><li>Evidence: {draft.possibleEvidence.join(', ')}</li><li>Missing: {draft.missing.join(', ')}</li></ul></ReviewSection><button type="button" onClick={submitMockReport} className="action-solid action-navy">Create mock report</button><button type="button" onClick={() => setStage('triage')} className="w-full p-3 font-bold text-[#4C5578]">Change route</button></section>}
+    {stage === 'submitted' && <section className="submitted"><div className="success-mark">✓</div><p className="eyebrow">CASE PREPARED</p><h1>Your trail is ready.</h1><p>The information you entered has been structured into a case record.</p><div className="case-reference"><small>REFERENCE</small><b>{ack}</b><span>Keep this number for your records.</span></div><div className="next-actions"><div><b>01</b><span>Preserve the original evidence.</span></div><div><b>02</b><span>For financial fraud, call 1930 immediately.</span></div><div><b>03</b><span>Use the official National Cyber Crime Reporting Portal for actual government filing.</span></div></div><a className="btn navy big" href="https://www.cybercrime.gov.in/" target="_blank" rel="noreferrer">Continue to official reporting →</a><button className="back-link" onClick={() => setStage('home')}>Return to First Response</button></section>}
 
-      {stage === 'standard' && <section className="space-y-4"><div className="route-banner standard mt-0"><p className="route-label">Standard route</p><p className="route-name">Calm reporting</p></div><div className="screen-heading"><p className="eyebrow">Report</p><h2>Tell the story first.</h2><p>We’ll structure it for you.</p></div><ReviewSection title="Incident details"><textarea aria-label="Incident description" className="textarea-main" value={description} onChange={(e) => setDescription(e.target.value)} />{characterGuard.blocked && <div role="alert" className="warning"><strong>Character warning:</strong> {characterGuard.message}</div>}<input aria-label="Amount" className="field" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Approximate amount" /><input aria-label="Approximate time" className="field" value={approximateTime} onChange={(e) => setApproximateTime(e.target.value)} placeholder="Approximate time" /><input aria-label="Bank or payment platform" className="field" value={platform} onChange={(e) => setPlatform(e.target.value)} placeholder="Bank or payment platform" /></ReviewSection>
-        <ReviewSection title="Scam & link check"><p className="text-sm">Paste <strong>anything</strong>: a long URL, UPI ID, phone number, SMS, WhatsApp text, email snippet or other suspicious content.</p><textarea aria-label="URL, UPI ID, phone or scam content" className="scan-box" value={scamInput} onChange={(e) => { setScamInput(e.target.value); setScamExplanation(''); }} placeholder="Paste suspicious content here…" /><div className="scan-meta"><span>Accepts long pasted content</span><span>{scamInput.length} characters</span></div>{scamInput.trim() && <div className={`scan-result ${scam.result === 'MATCH' ? 'match' : scam.result === 'INCONCLUSIVE' ? 'inconclusive' : 'not-found'}`}><div><span className="scan-badge">{scam.result}</span><p>{scam.message}</p></div></div>}<button type="button" onClick={explainScam} disabled={!scamInput.trim()} className="action-solid action-navy">Explain this scan with OpenAI</button>{scamExplanation && <p className="info-panel text-sm font-semibold">{scamExplanation}</p>}</ReviewSection>
-        <label className="flex gap-3 rounded-2xl border border-[#D9DEEA] bg-white/80 p-4 font-bold"><input type="checkbox" checked={approved} onChange={(e) => setApproved(e.target.checked)} /> I reviewed this mock report.</label><button type="button" disabled={!approved} onClick={submitMockReport} className="action-solid action-teal">Submit mock report</button><button type="button" onClick={() => setStage('triage')} className="w-full p-3 font-bold text-[#4C5578]">Change route</button></section>}
+    {showAIInput && stage === 'home' && <div className="ai-inline"><b>First Response AI</b><p>Describe anything you're unsure about and I’ll help route it.</p><textarea value={story} onChange={e => setStory(e.target.value)} placeholder="What happened?"/><button className="btn navy" onClick={chooseWithAI}>Continue →</button></div>}
+    <AIHelper onRoute={route}/>
+  </div></main>;
+}
 
-      {stage === 'status' && <section className="space-y-4"><div className="route-banner status mt-0"><p className="route-label">Status route</p><p className="route-name">See what happens next.</p></div><ReviewSection title="Acknowledgment number"><p className="reference text-xl font-black">FR-DEMO-2026-0812</p><p className="text-sm">Synthetic reference — not a real complaint number.</p></ReviewSection><p className="info-panel font-bold">Typical cases take {range.min}–{range.max} days. Simulated day 6.</p>{statuses.map((status) => <ReviewSection key={status.state} title={`${status.title} · day ${status.simulatedDay}`}><p><strong>Meaning:</strong> {status.meaning}</p><p><strong>Next:</strong> {status.next}</p><p><strong>Your action:</strong> {status.citizenAction}</p></ReviewSection>)}<button type="button" onClick={() => setStage('triage')} className="w-full p-3 font-bold text-[#4C5578]">Back to triage</button></section>}
-
-      {stage === 'submitted' && <section className="space-y-4"><div className="route-banner standard mt-0"><p className="route-label">Mock report created</p><p className="route-name">Your reference is ready.</p></div><ReviewSection title="Acknowledgment number"><p className="reference text-xl font-black">{ack}</p><p className="text-sm">Synthetic demo reference.</p></ReviewSection><button type="button" onClick={() => setStage('status')} className="action-solid action-teal">View simulated status</button><button type="button" onClick={() => setStage('triage')} className="w-full p-3 font-bold text-[#4C5578]">Start again</button></section>}
-
-      <footer className="site-footer"><div className="footer-grid"><div><div className="footer-brand"><span className="brand-mark">FR</span><strong>First Response</strong></div><p>Citizen-first cyber incident triage, reporting and status guidance.</p></div><div><span className="footer-label">Quick paths</span><p>Urgent response<br />Report an incident<br />Check complaint status</p></div><div><span className="footer-label">Safety</span><p>Never share OTPs, PINs or passwords. Verify official contact details before sending money.</p></div></div><div className="footer-bottom"><span>Prototype · Demo data only</span><span>Built for a clearer public-service experience</span></div><div className="footer-disclosure"><PrototypeBanner /></div></footer>
-      <ChatHelper onRoute={route} />
-    </div>
-  </main>;
+function EvidenceVault({ evidence, setEvidence }: { evidence: Evidence[]; setEvidence: (v: Evidence[]) => void }) {
+  function add(label: string, type: string) { setEvidence([...evidence, { id: `${Date.now()}-${type}`, label, type }]); }
+  return <div className="content-card evidence-vault"><div className="card-heading"><span>EVIDENCE VAULT</span><b>Keep the useful pieces together</b></div><div className="evidence-grid">{[['Screenshot','chat'],['Phone / UPI','upi'],['URL / profile','url'],['Notes','notes']].map(([label,type]) => <button key={type} onClick={() => add(label, type)}><span>＋</span><b>{label}</b><small>Add item</small></button>)}</div>{evidence.length > 0 && <div className="evidence-items">{evidence.map(e => <span key={e.id}>✓ {e.label}</span>)}</div>}<div className="evidence-tip"><b>Timeline tip</b><span>Keep the first message, important timestamps and the identifier visible in every screenshot.</span></div></div>;
 }
