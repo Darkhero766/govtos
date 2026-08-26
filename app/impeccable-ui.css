@@ -1,0 +1,434 @@
+/*
+ * First Response — Impeccable-inspired public-web direction
+ *
+ * Design intent:
+ * - Brand/landing-page register: confident, editorial, human.
+ * - Preserve the existing navy / red / amber / teal system.
+ * - No purple gradients, glassmorphism, decorative grid overlays, or card soup.
+ * - Strong type contrast, asymmetric composition, fewer but clearer surfaces.
+ */
+
+.app-shell .page-frame{
+  width:min(1180px,100%);
+  padding:0 28px;
+}
+
+.app-shell{
+  background:#f4f1e9;
+  color:var(--navy);
+}
+
+.app-shell .topbar{
+  height:78px;
+  margin:0 -28px;
+  padding:0 28px;
+  border-bottom:1px solid rgba(15,20,40,.15);
+  background:#f4f1e9;
+  backdrop-filter:none;
+}
+
+.app-shell .brand{gap:12px}
+.app-shell .brand-mark{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  background:var(--navy);
+  box-shadow:4px 4px 0 var(--amber);
+}
+.app-shell .brand b{font-size:18px;letter-spacing:-.045em}
+.app-shell .brand small{font-size:10px;letter-spacing:.01em}
+.app-shell .topbar nav{gap:3px}
+.app-shell .topbar nav button,
+.app-shell .lang-pill{
+  border-radius:999px;
+  padding:10px 13px;
+  font-size:11px;
+}
+.app-shell .topbar nav button:hover{background:var(--navy);color:#fff}
+.app-shell .lang-pill{background:var(--navy);border:1px solid var(--navy)}
+
+/* HERO */
+.app-shell .hero-new{
+  min-height:640px;
+  margin-top:26px;
+  border:0;
+  border-radius:30px;
+  overflow:hidden;
+  grid-template-columns:minmax(0,1.06fr) minmax(360px,.94fr);
+  background:#fbfaf5;
+  box-shadow:none;
+  position:relative;
+}
+.app-shell .hero-new:before{
+  content:'01';
+  position:absolute;
+  right:24px;
+  top:20px;
+  z-index:4;
+  font:600 10px 'IBM Plex Mono',monospace;
+  letter-spacing:.12em;
+  color:rgba(15,20,40,.45);
+}
+.app-shell .hero-copy-new{
+  padding:76px 58px 62px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  background:#fbfaf5;
+}
+.app-shell .hero-copy-new .eyebrow{
+  color:var(--red);
+  font-size:10px;
+  letter-spacing:.16em;
+}
+.app-shell .hero-copy-new h1{
+  max-width:720px;
+  margin:16px 0 22px;
+  font-size:clamp(56px,7.3vw,96px);
+  line-height:.86;
+  letter-spacing:-.075em;
+  text-wrap:balance;
+}
+.app-shell .hero-copy-new h1 em{
+  color:var(--red);
+  position:relative;
+  display:inline-block;
+}
+.app-shell .hero-copy-new h1 em:after{
+  content:'';
+  position:absolute;
+  height:7px;
+  left:2px;
+  right:9px;
+  bottom:-7px;
+  background:var(--amber);
+  transform:rotate(-1.5deg);
+}
+.app-shell .hero-lede{
+  max-width:570px;
+  margin:0 0 28px;
+  color:#50566b;
+  font-size:17px;
+  line-height:1.55;
+}
+.app-shell .hero-input{
+  max-width:640px;
+  min-height:70px;
+  padding:8px 8px 8px 19px;
+  border:2px solid var(--navy);
+  border-radius:17px;
+  box-shadow:6px 6px 0 var(--amber);
+  background:#fff;
+}
+.app-shell .hero-input span{color:var(--red);font-size:19px}
+.app-shell .hero-input input{font-size:15px}
+.app-shell .hero-input button{
+  width:52px;
+  height:52px;
+  border-radius:13px;
+  background:var(--red);
+  font-size:24px;
+  transition:transform .18s ease,background .18s ease;
+}
+.app-shell .hero-input button:hover{transform:translate(2px,-2px);background:#bd3524}
+.app-shell .hero-meta{
+  margin-top:22px;
+  color:#656b7d;
+  font-size:9px;
+  letter-spacing:.1em;
+}
+.app-shell .hero-meta i{background:var(--red)}
+
+.app-shell .hero-character{
+  min-height:640px;
+  background:#e8ded0;
+  border-left:1px solid rgba(15,20,40,.08);
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+}
+.app-shell .character-glow{display:none}
+.app-shell .character-figure{
+  width:min(430px,78%);
+  height:590px;
+  right:7%;
+  bottom:-18px;
+  animation:officerIdle 6s ease-in-out infinite;
+  transform-origin:50% 100%;
+}
+.app-shell .officer-art{
+  object-fit:contain!important;
+  object-position:center bottom!important;
+  filter:drop-shadow(0 24px 18px rgba(15,20,40,.13))!important;
+}
+.app-shell .speech{
+  right:auto;
+  left:7%;
+  top:13%;
+  max-width:215px;
+  padding:16px 18px;
+  border:2px solid var(--navy);
+  border-radius:16px 16px 16px 3px;
+  box-shadow:5px 5px 0 var(--amber);
+  font-size:13px;
+  animation:speechIn .7s ease-out both;
+}
+.app-shell .speech:after{border-color:var(--navy) transparent transparent transparent;bottom:-10px}
+@keyframes officerIdle{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-5px) rotate(.3deg)}}
+@keyframes speechIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* HOME PATHS — editorial tiles, not nested cards */
+.app-shell .path-section{padding:105px 0 75px}
+.app-shell .section-head{margin-bottom:28px;align-items:flex-end}
+.app-shell .section-head .eyebrow{color:var(--red)}
+.app-shell .section-head h2{
+  font-size:clamp(34px,4.3vw,54px);
+  line-height:.95;
+  letter-spacing:-.065em;
+  margin-top:9px;
+  max-width:650px;
+}
+.app-shell .section-head>span{font-size:10px;color:#777d8e}
+.app-shell .path-grid{
+  grid-template-columns:1.1fr .9fr;
+  grid-template-rows:1fr 1fr;
+  gap:10px;
+}
+.app-shell .path-card{
+  min-height:210px;
+  padding:27px;
+  border:1px solid rgba(15,20,40,.13);
+  border-radius:4px;
+  box-shadow:none;
+  transition:transform .22s ease,box-shadow .22s ease;
+}
+.app-shell .path-card:hover{
+  transform:translateY(-4px);
+  box-shadow:8px 8px 0 rgba(15,20,40,.12);
+}
+.app-shell .path-card.urgent{
+  grid-row:span 2;
+  min-height:430px;
+  background:var(--red);
+  border-color:var(--red);
+}
+.app-shell .path-card.safe{background:#d8ece8;border-color:#8cbfb6}
+.app-shell .path-card.report{background:#f7e6c7;border-color:#d9ae68}
+.app-shell .path-card.track{background:var(--navy);border-color:var(--navy)}
+.app-shell .path-icon{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.25);
+}
+.app-shell .safe .path-icon,.app-shell .report .path-icon{background:rgba(255,255,255,.6);border-color:transparent}
+.app-shell .path-copy{gap:8px}
+.app-shell .path-copy small{font-size:9px;letter-spacing:.12em}
+.app-shell .path-copy b{font-size:clamp(24px,3vw,36px);letter-spacing:-.055em;max-width:500px}
+.app-shell .path-copy>span{max-width:430px;font-size:14px;line-height:1.45}
+.app-shell .path-arrow{font-size:27px;right:23px;top:20px}
+
+/* INTELLIGENCE FEATURE */
+.app-shell .intel-teaser{
+  position:relative;
+  margin:20px 0 0;
+  padding:45px 46px;
+  border-radius:4px;
+  background:var(--navy);
+  box-shadow:10px 10px 0 var(--amber);
+}
+.app-shell .intel-teaser:before{
+  content:'02';
+  position:absolute;
+  top:18px;
+  right:22px;
+  color:rgba(255,255,255,.35);
+  font:600 10px 'IBM Plex Mono',monospace;
+}
+.app-shell .intel-teaser .eyebrow{color:#e6c47f}
+.app-shell .intel-teaser h2{font-size:clamp(34px,4.5vw,56px);line-height:.94;letter-spacing:-.06em;max-width:760px}
+.app-shell .intel-teaser p{max-width:700px;color:#cbd0db;font-size:14px}
+.app-shell .intel-teaser .btn.navy{background:#f7f2e8;border-radius:3px;min-height:54px;padding:13px 20px}
+.app-shell .intel-teaser .btn.navy:hover{background:var(--amber);color:var(--navy)}
+
+/* HOW IT WORKS */
+.app-shell .how-section{padding:115px 0 80px}
+.app-shell .how-grid{grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid rgba(15,20,40,.2);border-bottom:1px solid rgba(15,20,40,.2)}
+.app-shell .how-grid article{
+  min-height:220px;
+  padding:24px 22px 28px 0;
+  margin-right:22px;
+  border:0;
+  border-right:1px solid rgba(15,20,40,.15);
+  border-radius:0;
+  background:transparent;
+}
+.app-shell .how-grid article:last-child{border-right:0;margin-right:0}
+.app-shell .how-grid article>b{font-size:10px;color:var(--red)}
+.app-shell .how-grid h3{margin:44px 0 8px;font-size:23px;letter-spacing:-.04em}
+.app-shell .how-grid p{font-size:13px;line-height:1.55;color:#62687a}
+
+/* VOICE CTA */
+.app-shell .voice-banner{
+  margin:15px 0 100px;
+  padding:45px 46px;
+  border-radius:4px;
+  background:var(--teal);
+  box-shadow:none;
+}
+.app-shell .voice-banner .eyebrow{color:#e5f4f1}
+.app-shell .voice-banner h2{font-size:clamp(34px,4vw,50px);line-height:.96;letter-spacing:-.06em}
+.app-shell .voice-banner p:last-child{color:#e0f1ee;font-size:14px}
+.app-shell .voice-banner .btn.light{border-radius:3px;min-height:54px;padding:13px 20px}
+
+/* FOOTER */
+.app-shell .site-footer-new{
+  margin:0 -28px;
+  padding:48px 28px 24px;
+  grid-template-columns:1.4fr 1fr 1.2fr;
+  gap:50px;
+  background:var(--navy);
+}
+.app-shell .site-footer-new>b{font-size:20px;letter-spacing:-.04em}
+.app-shell .site-footer-new p{max-width:260px;font-size:13px}
+.app-shell .site-footer-new small{color:#e6c47f;font-size:9px;letter-spacing:.13em}
+.app-shell .site-footer-new button,.app-shell .site-footer-new a{font-size:12px;padding:7px 0;color:#dce0e9}
+.app-shell .site-footer-new button:hover,.app-shell .site-footer-new a:hover{color:#fff}
+.app-shell .site-footer-new .footer-bottom{font-size:9px}
+
+/* JOURNEY / PRODUCT UI: calmer, sharper */
+.app-shell .journey{max-width:900px;padding:70px 0 100px;gap:18px}
+.app-shell .journey-heading{padding:15px 0 12px}
+.app-shell .journey-heading h1,.app-shell .submitted h1{font-size:clamp(48px,6vw,78px);line-height:.9;letter-spacing:-.07em}
+.app-shell .journey-hero{
+  border-radius:4px;
+  padding:32px;
+  box-shadow:8px 8px 0 rgba(15,20,40,.12);
+}
+.app-shell .journey-hero h1{font-size:clamp(38px,5vw,60px);letter-spacing:-.06em}
+.app-shell .journey-hero.urgent{background:var(--red)}
+.app-shell .journey-hero.safety{background:var(--teal)}
+.app-shell .call1930{border-radius:3px;padding:20px;box-shadow:4px 4px 0 rgba(15,20,40,.12)}
+.app-shell .call1930 span{font-size:42px;letter-spacing:-.05em}
+.app-shell .content-card{
+  border:1px solid rgba(15,20,40,.16);
+  border-radius:4px;
+  background:#fbfaf5;
+  padding:24px;
+  box-shadow:none;
+}
+.app-shell .card-heading b{font-size:25px;letter-spacing:-.04em}
+.app-shell .textarea-main,.app-shell .field,.app-shell .scan-box{
+  border:1px solid rgba(15,20,40,.3);
+  border-radius:3px;
+  box-shadow:none;
+  background:#fff;
+}
+.app-shell .textarea-main:focus,.app-shell .field:focus,.app-shell .scan-box:focus{
+  border-color:var(--navy);
+  box-shadow:4px 4px 0 rgba(232,163,61,.6);
+  outline:none;
+}
+.app-shell .btn{border-radius:3px;box-shadow:none}
+.app-shell .btn:hover{transform:translateY(-2px)}
+.app-shell .btn.navy{background:var(--navy)}
+.app-shell .btn.teal{background:var(--teal)}
+.app-shell .btn.red{background:var(--red)}
+.app-shell .btn.light{background:#fbfaf5}
+.app-shell .evidence-vault{background:transparent}
+.app-shell .evidence-grid button{border-radius:3px;background:#fbfaf5}
+.app-shell .evidence-grid button:hover{border-style:solid;border-color:var(--navy);transform:translateY(-2px)}
+.app-shell .category-pills button,.app-shell .issue-grid button{border-radius:3px}
+.app-shell .scan-result{border-radius:3px}
+.app-shell .signal-row{border-radius:3px;box-shadow:none}
+.app-shell .signal-row:hover{transform:translateX(4px);box-shadow:4px 4px 0 rgba(15,20,40,.1)}
+.app-shell .signal-detail{border-radius:3px}
+.app-shell .case-row,.app-shell .timeline{border-radius:3px}
+
+/* AI helper becomes a deliberate floating tool, not a chat bubble */
+.app-shell .ai-helper{right:24px;bottom:24px}
+.app-shell .ai-fab{
+  border-radius:3px;
+  padding:13px 17px;
+  background:var(--red);
+  box-shadow:5px 5px 0 var(--navy);
+  font-size:12px;
+}
+.app-shell .ai-fab:hover{transform:translate(-2px,-2px)}
+.app-shell .ai-pop,.app-shell .ai-inline{border-radius:4px;box-shadow:8px 8px 0 rgba(15,20,40,.16);border:1px solid var(--navy)}
+.app-shell .ai-spark{border-radius:50%;background:var(--amber);color:var(--navy)}
+
+/* MOBILE — preserve hierarchy, don't squeeze desktop into a phone */
+@media(max-width:720px){
+  .app-shell .page-frame{padding:0 16px}
+  .app-shell .topbar{height:66px;margin:0 -16px;padding:0 16px}
+  .app-shell .brand b{font-size:16px}
+  .app-shell .brand-mark{width:38px;height:38px}
+  .app-shell .hero-new{
+    min-height:760px;
+    margin-top:16px;
+    grid-template-columns:1fr;
+    grid-template-rows:auto 360px;
+    border-radius:20px;
+  }
+  .app-shell .hero-copy-new{padding:42px 24px 28px}
+  .app-shell .hero-copy-new h1{font-size:clamp(48px,13vw,66px);line-height:.87;margin:13px 0 22px}
+  .app-shell .hero-copy-new h1 em:after{height:5px;bottom:-5px}
+  .app-shell .hero-lede{font-size:15px;line-height:1.5;margin-bottom:24px}
+  .app-shell .hero-input{min-height:62px;padding-left:13px;box-shadow:4px 4px 0 var(--amber)}
+  .app-shell .hero-input button{width:46px;height:46px}
+  .app-shell .hero-character{min-height:360px;border-left:0;border-top:1px solid rgba(15,20,40,.08)}
+  .app-shell .character-figure{width:315px;height:410px;right:50%;transform:translateX(50%);bottom:-12px}
+  .app-shell .speech{left:auto;right:14px;top:16px;max-width:180px;font-size:11px;padding:12px 13px;box-shadow:4px 4px 0 var(--amber)}
+  .app-shell .path-section{padding:70px 0 55px}
+  .app-shell .section-head h2{font-size:38px}
+  .app-shell .path-grid{grid-template-columns:1fr;grid-template-rows:auto;gap:8px}
+  .app-shell .path-card,.app-shell .path-card.urgent{grid-row:auto;min-height:190px;padding:22px}
+  .app-shell .path-card.urgent{min-height:220px}
+  .app-shell .path-copy b{font-size:27px}
+  .app-shell .intel-teaser{padding:30px 24px;box-shadow:6px 6px 0 var(--amber)}
+  .app-shell .intel-teaser h2{font-size:38px}
+  .app-shell .intel-teaser .btn.navy{width:100%;margin-top:12px}
+  .app-shell .how-section{padding:78px 0 50px}
+  .app-shell .how-grid{grid-template-columns:1fr 1fr}
+  .app-shell .how-grid article{min-height:190px;padding:20px 16px 22px 0;margin-right:16px}
+  .app-shell .how-grid article:nth-child(2){border-right:0;margin-right:0}
+  .app-shell .how-grid article:nth-child(3){border-top:1px solid rgba(15,20,40,.15);padding-top:24px}
+  .app-shell .how-grid h3{margin-top:30px;font-size:20px}
+  .app-shell .voice-banner{margin-bottom:65px;padding:32px 24px;display:grid}
+  .app-shell .voice-banner h2{font-size:38px}
+  .app-shell .site-footer-new{margin:0 -16px;padding:40px 16px 20px;grid-template-columns:1fr 1fr;gap:28px}
+  .app-shell .site-footer-new>div:first-child{grid-column:1/-1}
+  .app-shell .footer-bottom{grid-column:1/-1;display:grid}
+  .app-shell .journey{padding:42px 0 75px}
+  .app-shell .journey-hero{padding:24px;box-shadow:5px 5px 0 rgba(15,20,40,.12)}
+  .app-shell .journey-hero h1{font-size:39px}
+  .app-shell .content-card{padding:18px}
+  .app-shell .ai-helper{right:14px;bottom:14px}
+}
+
+@media(max-width:430px){
+  .app-shell .hero-new{min-height:735px;grid-template-rows:auto 325px}
+  .app-shell .hero-copy-new{padding:36px 20px 24px}
+  .app-shell .hero-copy-new h1{font-size:47px}
+  .app-shell .hero-lede{font-size:14px}
+  .app-shell .hero-meta{gap:6px;font-size:8px}
+  .app-shell .hero-character{min-height:325px}
+  .app-shell .character-figure{width:285px;height:370px}
+  .app-shell .speech{top:13px;right:10px;max-width:160px}
+  .app-shell .section-head h2{font-size:34px}
+  .app-shell .path-card.urgent{min-height:205px}
+  .app-shell .path-card{min-height:175px}
+  .app-shell .path-copy b{font-size:24px}
+  .app-shell .intel-teaser h2,.app-shell .voice-banner h2{font-size:34px}
+  .app-shell .how-grid{grid-template-columns:1fr}
+  .app-shell .how-grid article,.app-shell .how-grid article:nth-child(2){border-right:0;border-bottom:1px solid rgba(15,20,40,.15);margin:0;padding:20px 0}
+  .app-shell .how-grid article:last-child{border-bottom:0}
+  .app-shell .site-footer-new{grid-template-columns:1fr}
+  .app-shell .site-footer-new>div:first-child{grid-column:auto}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .app-shell .character-figure,.app-shell .speech{animation:none!important}
+}
