@@ -1,6 +1,7 @@
 import './globals.css';
 import './hero-upgrade.css';
 import './product-upgrade.css';
+import './impeccable-ui.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'First Response | Cyber Crime Support', description: 'Report cyber incidents, get urgent help, and track complaint references in one place.' };
