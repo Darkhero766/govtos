@@ -1,0 +1,32 @@
+/* Product-level visual pass: richer actions, real case lookup, cyberbullying emphasis. */
+
+.triage-stack{grid-template-columns:1fr;gap:14px}
+.triage-card{display:grid;grid-template-columns:46px 1fr 28px;grid-template-rows:auto 1fr;column-gap:14px;align-items:center;min-height:138px!important;padding:20px 18px!important;border-radius:24px!important;text-align:left;overflow:hidden}
+.triage-card .card-icon{grid-row:1 / span 2;display:grid;place-items:center;width:46px;height:46px;border-radius:15px;background:rgba(255,255,255,.2);font:800 22px 'Space Grotesk',sans-serif;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.triage-card.standard .card-icon,.triage-card.status .card-icon{background:rgba(15,20,40,.08)}
+.triage-card .card-copy{min-width:0;display:grid;gap:5px}
+.triage-card .card-kicker{margin:0!important;font-size:9px!important;letter-spacing:.12em!important}
+.triage-card .card-title{font-size:20px!important;line-height:1.08!important}
+.triage-card .card-detail{display:block;font:500 12px/1.4 'IBM Plex Sans',sans-serif;opacity:.78;max-width:540px}
+.triage-card .card-arrow{grid-column:3;grid-row:1 / span 2;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.2);font-size:17px;transition:transform .2s ease}
+.triage-card:hover .card-arrow{transform:translateX(3px)}
+.triage-card.urgent .card-detail{color:#fff}
+.triage-card.standard .card-detail,.triage-card.status .card-detail{color:var(--slate)}
+
+.home-actions{position:relative}
+.home-actions:after{content:'Also supported: cyberbullying · online harassment · threats · impersonation · intimate-image abuse';display:block;margin-top:12px;padding:11px 14px;border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.68);color:var(--slate);font:600 10px/1.5 'IBM Plex Mono',monospace;letter-spacing:.03em}
+
+.home-confidence .confidence-grid article{position:relative;overflow:hidden}
+.home-confidence .confidence-grid article:nth-child(1):after{content:'Cyberbullying';position:absolute;right:14px;top:14px;padding:5px 7px;border-radius:999px;background:var(--red-soft);color:#8c3427;font:700 8px 'IBM Plex Mono',monospace}
+.home-confidence .confidence-grid article:nth-child(2):after{content:'1930';position:absolute;right:14px;top:14px;padding:5px 7px;border-radius:999px;background:var(--amber-soft);color:#805517;font:700 8px 'IBM Plex Mono',monospace}
+.home-confidence .confidence-grid article:nth-child(3):after{content:'Live trail';position:absolute;right:14px;top:14px;padding:5px 7px;border-radius:999px;background:var(--teal-soft);color:#216b61;font:700 8px 'IBM Plex Mono',monospace}
+
+.case-database-trigger{position:fixed;left:16px;bottom:16px;z-index:50;display:flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:var(--navy);color:#fff;box-shadow:0 14px 35px rgba(15,20,40,.22);cursor:pointer}
+.case-database-trigger span{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:var(--teal);font-size:11px}.case-database-trigger strong{font:700 11px 'Space Grotesk',sans-serif}.case-database-trigger small{font:600 8px 'IBM Plex Mono',monospace;color:#bfc5d6}
+.case-database-backdrop{position:fixed;inset:0;z-index:100;background:rgba(15,20,40,.42);backdrop-filter:blur(7px);display:flex;align-items:flex-end;justify-content:center;padding:18px}
+.case-database{width:min(100%,720px);max-height:min(82vh,760px);overflow:auto;border-radius:28px;background:#f7f8fb;color:var(--navy);box-shadow:0 28px 80px rgba(15,20,40,.28);padding:22px;animation:caseSheetIn .24s ease-out}
+.case-db-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:16px}.case-db-head h2{margin:5px 0 4px;font:700 30px 'Space Grotesk',sans-serif;letter-spacing:-.04em}.case-db-head p:last-child{margin:0;color:var(--slate);font-size:13px}.case-db-head>button{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:#fff;font-size:24px;color:var(--slate);cursor:pointer}.case-database>input{width:100%;height:48px;border:1px solid #b9c0d1;border-radius:14px;background:#fff;padding:0 14px;color:var(--navy);margin-bottom:12px}.case-db-list{display:grid;gap:9px}.case-db-list article{display:flex;justify-content:space-between;gap:14px;padding:14px;border:1px solid var(--line);border-radius:17px;background:#fff}.case-db-list article b{font:700 9px 'IBM Plex Mono',monospace;color:#65708e}.case-db-list article h3{margin:4px 0 3px;font:700 15px 'Space Grotesk',sans-serif}.case-db-list article p{margin:0;color:var(--slate);font-size:11px}.case-db-list article>span{align-self:flex-start;text-align:right;max-width:120px;padding:5px 8px;border-radius:9px;background:var(--teal-soft);color:#216b61;font:700 9px 'IBM Plex Mono',monospace}.case-db-list article>span small{display:block;margin-top:3px;color:var(--slate);font-size:8px;font-weight:600}
+@keyframes caseSheetIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+@media (min-width:700px){.triage-stack{grid-template-columns:1.15fr 1fr 1fr}.triage-card{min-height:185px!important;grid-template-columns:42px 1fr 28px}.triage-card.urgent{grid-row:span 1}.triage-card .card-title{font-size:21px!important}.triage-card .card-detail{font-size:12px}.home-confidence .confidence-grid{grid-template-columns:repeat(3,1fr)}.case-database-backdrop{align-items:center}.case-database-trigger{left:24px;bottom:24px}}
+@media (max-width:639px){.case-database-trigger{left:12px;bottom:12px}.case-database-trigger strong{font-size:10px}.case-database-trigger small{display:none}.case-database-backdrop{padding:10px}.case-database{padding:17px;border-radius:24px;max-height:88vh}.case-db-head h2{font-size:25px}.case-db-list article{display:grid}.case-db-list article>span{justify-self:start;text-align:left}}
