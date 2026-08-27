@@ -3,6 +3,7 @@ import './hero-upgrade.css';
 import './product-upgrade.css';
 import './impeccable-ui.css';
 import './button-depth.css';
+import './final-polish.css';
 import EvidenceUploadBridge from './evidence-upload-bridge';
 import type { Metadata } from 'next';
 
