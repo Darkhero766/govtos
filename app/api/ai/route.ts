@@ -10,7 +10,7 @@ function parseJson<T>(text: string): T {
   const cleaned = text.trim().replace(/^```json\s*/i, '').replace(/```$/i, '').trim();
   return JSON.parse(cleaned) as T;
 }
-function safeText(value: unknown): string { return typeof value === 'string' ? value.slice(0, 4000) : ''; }
+function safeText(value: unknown, maxLength = 4000): string { return typeof value === 'string' ? value.slice(0, maxLength) : ''; }
 function compactReply(value: unknown): string {
   const text = typeof value === 'string' ? value.replace(/\*\*/g, '').replace(/\s+/g, ' ').trim() : '';
   return (text || 'I’m here with you. Tell me what happened and I’ll help with the next step.').slice(0, 900);
