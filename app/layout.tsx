@@ -5,6 +5,7 @@ import './impeccable-ui.css';
 import './button-depth.css';
 import './final-polish.css';
 import './mobile-final.css';
+import './production-fixes.css';
 import EvidenceUploadBridge from './evidence-upload-bridge';
 import HindiTranslate from './hindi-translate';
 import type { Metadata } from 'next';
