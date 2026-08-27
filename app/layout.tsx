@@ -4,6 +4,7 @@ import './product-upgrade.css';
 import './impeccable-ui.css';
 import './button-depth.css';
 import './final-polish.css';
+import './mobile-final.css';
 import EvidenceUploadBridge from './evidence-upload-bridge';
 import type { Metadata } from 'next';
 
