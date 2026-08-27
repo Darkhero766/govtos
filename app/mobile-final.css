@@ -12,3 +12,43 @@ body>.skiptranslate{display:none !important}
 .goog-te-gadget{font-size:0 !important}
 .goog-te-gadget-icon{display:none !important}
 .goog-te-combo{position:fixed !important;width:1px !important;height:1px !important;opacity:0 !important;pointer-events:none !important}
+
+/* FINAL ASSISTANT MOBILE LAYOUT: full-height sheet, one scroll region, no overlap. */
+@media(max-width:800px){
+  body:has(.fr-companion-backdrop){overflow:hidden !important;overscroll-behavior:none !important}
+  .fr-companion-backdrop{position:fixed !important;inset:0 !important;padding:0 !important;margin:0 !important;display:block !important;z-index:2147483000 !important;background:rgba(12,16,31,.62) !important;backdrop-filter:blur(5px) !important}
+  .fr-companion{position:absolute !important;inset:0 !important;width:100vw !important;max-width:none !important;height:100svh !important;max-height:none !important;margin:0 !important;border:0 !important;border-radius:0 !important;overflow:hidden !important;display:flex !important;flex-direction:column !important}
+  .fr-companion-header{height:62px !important;min-height:62px !important;flex:none !important;padding:8px 12px !important}
+  .fr-companion-title{min-width:0 !important;gap:8px !important}
+  .fr-companion-title strong{font-size:15px !important}
+  .fr-companion-title small{font-size:9px !important}
+  .fr-spark{width:34px !important;height:34px !important;flex:none !important}
+  .fr-header-actions{gap:4px !important}
+  .fr-header-actions button{padding:7px 9px !important;font-size:11px !important}
+  .fr-header-actions .fr-close{display:block !important;font-size:22px !important;padding:4px 8px !important}
+  .fr-companion-body{display:flex !important;flex:1 1 auto !important;min-height:0 !important;height:auto !important;overflow:hidden !important}
+  .fr-companion-side{display:none !important}
+  .fr-chat{display:flex !important;flex:1 1 auto !important;min-width:0 !important;min-height:0 !important;height:auto !important;overflow:hidden !important;padding:10px 11px max(8px,env(safe-area-inset-bottom)) !important}
+  .fr-chat-intro{flex:none !important;padding-bottom:8px !important}
+  .fr-chat-intro b{font-size:15px !important}
+  .fr-chat-intro span{font-size:7px !important}
+  .fr-chat-intro button{padding:6px 10px !important;font-size:10px !important}
+  .fr-golden-hour{flex:none !important;margin:8px 0 2px !important;padding:8px 10px !important}
+  .fr-quick{flex:none !important;overflow-x:auto !important;flex-wrap:nowrap !important;padding:7px 0 !important}
+  .fr-messages{flex:1 1 0 !important;min-height:0 !important;height:auto !important;overflow-y:auto !important;overflow-x:hidden !important;-webkit-overflow-scrolling:touch !important;overscroll-behavior:contain !important;padding:6px 2px 12px !important}
+  .fr-msg{max-width:94% !important}
+  .fr-msg p{font-size:13px !important;line-height:1.48 !important;padding:10px 12px !important}
+  .fr-composer{flex:none !important;display:grid !important;grid-template-columns:1fr 48px !important;gap:7px !important;padding:9px 0 0 !important;margin:0 !important}
+  .fr-composer>button:first-child{display:none !important}
+  .fr-composer textarea{min-height:48px !important;height:48px !important;max-height:96px !important;resize:none !important;font-size:14px !important;padding:12px !important}
+  .fr-composer>button:last-child{height:48px !important;width:48px !important;border-radius:14px !important}
+  .fr-privacy{flex:none !important;padding-top:5px !important;font-size:8px !important}
+  .fr-companion-backdrop .fr-companion-fab{display:none !important}
+  .fr-companion-fab{z-index:10000 !important}
+  .ai-helper{display:none !important}
+}
+
+@media(min-width:801px){
+  body:has(.fr-companion-backdrop){overflow:hidden !important}
+  .fr-companion-backdrop .fr-companion-fab{display:none !important}
+}
