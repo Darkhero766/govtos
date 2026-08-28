@@ -110,7 +110,7 @@ export async function POST(request: Request) {
     }
     if (operation === 'draft') {
       const payload = { story: safeText(body.story), amount: safeText(body.amount), approximateTime: safeText(body.approximateTime), platform: safeText(body.platform) };
-      const response = await client.responses.create({ model, store: false, input: `Create a concise cybercrime complaint summary using ONLY stated facts. Missing facts must say "We don't know this yet." Never invent names, IDs, banks, dates, amounts or evidence. Return JSON only with keys summary, suspected, financialLoss, amount, approximateIncidentType, possibleEvidence, missing. Data: ${JSON.stringify(payload)}` });
+      const response = await client.responses.create({ model, store: false, input: `Create a case-specific cybercrime complaint draft from the incident below. The summary MUST be materially different for different incident types and MUST name the actual incident pattern when the facts support it (for example: financial fraud/impersonation, account takeover, cyberbullying/harassment, online threat, blackmail, or scam). Start the summary with a plain-language description of what happened, not a generic sentence such as "This report concerns a cybercrime incident." Include only facts explicitly provided. Missing facts must say "We don't know this yet." Never invent names, IDs, banks, dates, amounts, evidence or outcomes. Keep summary to 2-4 sentences and make it read like a concise human-written complaint. Return JSON only with keys summary, suspected, financialLoss, amount, approximateIncidentType, possibleEvidence, missing. Data: ${JSON.stringify(payload)}` });
       return NextResponse.json(parseJson(response.output_text));
     }
     if (operation === 'scamReason') {
